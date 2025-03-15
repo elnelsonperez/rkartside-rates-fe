@@ -211,7 +211,9 @@ function QuoteForm({ store }: { store: Store }) {
                 RD$
               </span>
               <input
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9,]*"
                 id="saleAmount"
                 value={saleAmount}
                 onChange={handleSaleAmountChange}
