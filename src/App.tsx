@@ -103,6 +103,20 @@ function QuoteForm({ store }: { store: Store }) {
     }
   };
 
+  const handleNumberChange = (num): void => {
+    setNumberOfSpaces(num);
+    // Focus the sale amount input after selection only if it's required
+    if (requiresSaleAmount) {
+      setTimeout(() => {
+        saleAmountInputRef.current?.focus();
+      }, 0);
+    }
+
+    if (savedQuote) {
+      setSavedQuote(null);
+    }
+  }
+
   const handleSaleAmountChange = (e: ChangeEvent<HTMLInputElement>): void => {
     // Remove non-numeric characters
     const rawValue = e.target.value.replace(/[^0-9]/g, '');
@@ -119,6 +133,10 @@ function QuoteForm({ store }: { store: Store }) {
       setSaleAmount(formattedValue);
     } else {
       setSaleAmount('');
+    }
+
+    if (savedQuote) {
+      setSavedQuote(null);
     }
   };
 
@@ -202,15 +220,7 @@ function QuoteForm({ store }: { store: Store }) {
                       name="numberOfSpaces"
                       value={num}
                       checked={numberOfSpaces === num}
-                      onChange={() => {
-                        setNumberOfSpaces(num);
-                        // Focus the sale amount input after selection only if it's required
-                        if (requiresSaleAmount) {
-                          setTimeout(() => {
-                            saleAmountInputRef.current?.focus();
-                          }, 0);
-                        }
-                      }}
+                      onChange={() => handleNumberChange(num)}
                       className="absolute opacity-0 h-0 w-0" // Hidden visually but still focusable
                     />
                     <label
