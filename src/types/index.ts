@@ -1,5 +1,6 @@
 export interface QuoteRequest {
   store_id: string;
+  client_name: string;
   number_of_spaces: number;
   sale_amount: number;
 }

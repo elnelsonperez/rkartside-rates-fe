@@ -5,8 +5,18 @@ import { useAuth } from './context/AuthContext';
 import { Login } from './components/Login';
 import {Store} from "./lib/api.ts";
 
+// Function to convert text to title case
+const toTitleCase = (str: string): string => {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 function QuoteForm({store}: {store: Store}) {
 
+  const [clientName, setClientName] = useState<string>('');
   const [numberOfSpaces, setNumberOfSpaces] = useState<number>(1);
   const [saleAmount, setSaleAmount] = useState<string>('');
   const [quoteResult, setQuoteResult] = useState<QuoteResponse | null>(null);
@@ -23,7 +33,7 @@ function QuoteForm({store}: {store: Store}) {
       currency: 'DOP',
     }).format(value);
   };
-
+  
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError('');
@@ -31,15 +41,19 @@ function QuoteForm({store}: {store: Store}) {
     setLoading(true);
 
     try {
-      // Convert saleAmount to a number and validate
-      const saleAmountNum = Number(saleAmount.replace(/[^0-9.-]+/g, ''));
+      // Parse the formatted saleAmount by removing all non-numeric characters
+      const saleAmountNum = Number(saleAmount.replace(/[^0-9]/g, ''));
 
       if (isNaN(saleAmountNum) || saleAmountNum <= 0) {
         throw new Error('El monto de venta debe ser un número positivo');
       }
+      
+      // Format client name to title case
+      const formattedClientName = toTitleCase(clientName.trim());
 
       const quoteRequest: QuoteRequest = {
         store_id: store.id,
+        client_name: formattedClientName,
         number_of_spaces: numberOfSpaces,
         sale_amount: saleAmountNum,
       };
@@ -55,9 +69,22 @@ function QuoteForm({store}: {store: Store}) {
   };
 
   const handleSaleAmountChange = (e: ChangeEvent<HTMLInputElement>): void => {
-    // Allow only numbers and format as currency
-    const value = e.target.value.replace(/[^0-9]/g, '');
-    setSaleAmount(value ? value : '');
+    // Remove non-numeric characters
+    const rawValue = e.target.value.replace(/[^0-9]/g, '');
+    
+    if (rawValue) {
+      // Convert to number and format with thousand separators
+      const numericValue = parseInt(rawValue, 10);
+      // Format with thousand separators but no currency symbol or decimal places
+      const formattedValue = new Intl.NumberFormat('es-DO', {
+        useGrouping: true,
+        maximumFractionDigits: 0,
+      }).format(numericValue);
+      
+      setSaleAmount(formattedValue);
+    } else {
+      setSaleAmount('');
+    }
   };
 
   const handleSignOut = async () => {
@@ -67,6 +94,9 @@ function QuoteForm({store}: {store: Store}) {
       console.error('Error signing out:', err);
     }
   };
+  
+  // Check if the form is valid to enable/disable the submit button
+  const isFormInvalid = !clientName.trim() || !saleAmount || numberOfSpaces <= 0 || loading;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -91,6 +121,23 @@ function QuoteForm({store}: {store: Store}) {
 
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label
+              htmlFor="clientName"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Nombre del Cliente
+            </label>
+            <input
+              type="text"
+              id="clientName"
+              value={clientName}
+              onChange={e => setClientName(e.target.value)}
+              required
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
           <div>
             <label
               htmlFor="numberOfSpaces"
@@ -131,7 +178,7 @@ function QuoteForm({store}: {store: Store}) {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={isFormInvalid}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 ease-in-out disabled:opacity-50"
           >
             {loading ? 'Procesando...' : 'Cotizar'}
@@ -143,8 +190,11 @@ function QuoteForm({store}: {store: Store}) {
         {quoteResult && (
           <div className="mt-6 p-4 border border-green-200 rounded-md bg-green-50">
             <h2 className="text-lg font-semibold text-gray-800 mb-2">Resultado de la Cotización</h2>
+            <p className="text-gray-700 mb-2">
+              <strong>Cliente:</strong> {clientName}
+            </p>
             <p className="text-gray-700">
-              Tarifa calculada:{' '}
+              <strong>Tarifa calculada:</strong>{' '}
               <span className="font-bold">{formatCurrency(quoteResult.rate)}</span>
             </p>
           </div>
