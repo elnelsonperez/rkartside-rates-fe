@@ -163,6 +163,19 @@ function QuoteForm({ store }: { store: Store }) {
     }
   };
 
+  const handleLimpiar = () => {
+    setClientName('');
+    setNumberOfSpaces(1);
+    setSaleAmount('');
+    setSavedQuote(null);
+    setIsConfirmed(false);
+    setError('');
+
+    // Focus the client name input field
+    setTimeout(() => {
+      clientNameInputRef.current?.focus();
+    }, 0);
+  }
   // Check if the form is valid to enable/disable the submit button
   const isFormInvalid = !clientName.trim() || (requiresSaleAmount && !saleAmount) || numberOfSpaces <= 0 || loading;
   
@@ -268,7 +281,7 @@ function QuoteForm({ store }: { store: Store }) {
           <div className="flex gap-2">
             <button
               type="submit"
-              disabled={isFormInvalid}
+              disabled={isFormInvalid || isConfirmed}
               className={`${hasFormValues ? 'flex-grow' : 'w-full'} bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 ease-in-out disabled:opacity-50`}
             >
               {loading ? 'Procesando...' : 'Cotizar'}
@@ -276,20 +289,8 @@ function QuoteForm({ store }: { store: Store }) {
             {hasFormValues && (
               <button
                 type="button"
-                onClick={() => {
-                  setClientName('');
-                  setNumberOfSpaces(1);
-                  setSaleAmount('');
-                  setSavedQuote(null);
-                  setIsConfirmed(false);
-                  setError('');
-                  
-                  // Focus the client name input field
-                  setTimeout(() => {
-                    clientNameInputRef.current?.focus();
-                  }, 0);
-                }}
-                className="w-28 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 rounded-md transition duration-200 ease-in-out"
+                onClick={handleLimpiar}
+                className="w-28 cursor-pointer bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 rounded-md transition duration-200 ease-in-out"
               >
                 Limpiar
               </button>
@@ -320,9 +321,17 @@ function QuoteForm({ store }: { store: Store }) {
                 {confirmLoading ? 'Confirmando...' : 'Confirmar Cotización'}
               </button>
             ) : (
-              <div className="bg-blue-100 border border-blue-300 text-blue-700 px-4 py-2 rounded-md text-center">
-                ✅ Cotización confirmada exitosamente
-              </div>
+                <>
+                  <div className="bg-blue-100 border border-blue-300 text-blue-700 px-4 py-2 rounded-md text-center">
+                    ✅ Cotización confirmada exitosamente
+                  </div>
+
+                  <button type="button"
+                          onClick={handleLimpiar}
+                          className="mt-4 cursor-pointer w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 ease-in-out disabled:opacity-50">
+                    Hacer otra cotización
+                  </button>
+                </>
             )}
           </div>
         )}
@@ -332,7 +341,7 @@ function QuoteForm({ store }: { store: Store }) {
 }
 
 function App() {
-  const { user, loading, store } = useAuth();
+  const {user, loading, store} = useAuth();
 
   if (loading || (user && !store)) {
     return (

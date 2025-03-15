@@ -62,10 +62,13 @@ serve(async (req) => {
 
     // Check if the store requires sale amount
     const requiresSaleAmount = !!store.requires_sale_amount;
+
+    // Formula Rate = (960.16 × NUmber of spaces + 0.066354 × sale_amount + 1782.41)×(1+rateFactor)
+
+    // store.rate_factor is a number between 0 and 1
     const rateFactor = 1 + store.rate_factor;
 
     let rateAmount: number;
-
 
     if (requiresSaleAmount) {
       if (!payload.sale_amount) {
@@ -74,10 +77,9 @@ serve(async (req) => {
             { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
         );
       }
-
-      rateAmount = 2000 // placeholder
+        rateAmount = (960.16 * payload.number_of_spaces + 0.066354 * payload.sale_amount + 1782.41) * rateFactor
     } else {
-      rateAmount = 1000 // placeholder
+       rateAmount = (960.16 * payload.number_of_spaces + 1782.41) * rateFactor
     }
 
 
