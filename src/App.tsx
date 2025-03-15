@@ -152,7 +152,7 @@ function QuoteForm({store}: {store: Store}) {
 function App() {
   const { user, loading, store } = useAuth();
 
-  if (loading || !store) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -160,7 +160,7 @@ function App() {
     );
   }
 
-  return user ? <QuoteForm store={store} /> : <Login />;
+  return user && store ? <QuoteForm store={store} /> : <Login />;
 }
 
 export default App;
