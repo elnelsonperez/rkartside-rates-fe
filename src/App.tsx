@@ -1,9 +1,7 @@
-import { useState, FormEvent, ChangeEvent } from 'react';
-import axios from 'axios';
-import { QuoteRequest, QuoteResponse } from './types';
+import { useState, useRef, FormEvent, ChangeEvent } from 'react';
 import { useAuth } from './context/AuthContext';
 import { Login } from './components/Login';
-import {Store} from "./lib/api.ts";
+import { Store, createQuote, confirmQuote, InsertQuote, Quote } from './lib/api.ts';
 
 // Function to convert text to title case
 const toTitleCase = (str: string): string => {
@@ -14,18 +12,21 @@ const toTitleCase = (str: string): string => {
     .join(' ');
 };
 
-function QuoteForm({store}: {store: Store}) {
-
+function QuoteForm({ store }: { store: Store }) {
   const [clientName, setClientName] = useState<string>('');
   const [numberOfSpaces, setNumberOfSpaces] = useState<number>(1);
   const [saleAmount, setSaleAmount] = useState<string>('');
-  const [quoteResult, setQuoteResult] = useState<QuoteResponse | null>(null);
+  const [savedQuote, setSavedQuote] = useState<Quote | null>(null);
+  const [isConfirmed, setIsConfirmed] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+  const [confirmLoading, setConfirmLoading] = useState<boolean>(false);
   const { signOut, user } = useAuth();
+  
+  // Reference to the client name input field for focusing
+  const clientNameInputRef = useRef<HTMLInputElement>(null);
 
   const logoUrl = store.image_url || 'https://placehold.co/600x400';
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://api.example.com';
 
   const formatCurrency = (value: number): string => {
     return new Intl.NumberFormat('es-DO', {
@@ -33,11 +34,10 @@ function QuoteForm({store}: {store: Store}) {
       currency: 'DOP',
     }).format(value);
   };
-  
+
   const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError('');
-    setQuoteResult(null);
     setLoading(true);
 
     try {
@@ -47,19 +47,36 @@ function QuoteForm({store}: {store: Store}) {
       if (isNaN(saleAmountNum) || saleAmountNum <= 0) {
         throw new Error('El monto de venta debe ser un número positivo');
       }
-      
+
       // Format client name to title case
       const formattedClientName = toTitleCase(clientName.trim());
 
-      const quoteRequest: QuoteRequest = {
+      // Calculate the rate (example formula - adjust as needed)
+      // For example, rate is 10% of sale amount
+      const rateAmount = Math.round(saleAmountNum * 0.1);
+
+      // Ensure user exists
+      if (!user) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      // Create a new quote in Supabase
+      const quoteData: InsertQuote = {
         store_id: store.id,
         client_name: formattedClientName,
         number_of_spaces: numberOfSpaces,
         sale_amount: saleAmountNum,
+        rate_amount: rateAmount,
+        is_confirmed: false,
+        created_by: user.id,
       };
 
-      const response = await axios.post<QuoteResponse>(`${apiUrl}/quote`, quoteRequest);
-      setQuoteResult(response.data);
+      // Save the quote to Supabase
+      const newQuote = await createQuote(quoteData);
+
+      // Update state with the results
+      setSavedQuote(newQuote);
+      setIsConfirmed(false);
     } catch (err) {
       console.error('Error fetching quote:', err);
       setError('Error al obtener la cotización. Por favor, intente de nuevo.');
@@ -71,7 +88,7 @@ function QuoteForm({store}: {store: Store}) {
   const handleSaleAmountChange = (e: ChangeEvent<HTMLInputElement>): void => {
     // Remove non-numeric characters
     const rawValue = e.target.value.replace(/[^0-9]/g, '');
-    
+
     if (rawValue) {
       // Convert to number and format with thousand separators
       const numericValue = parseInt(rawValue, 10);
@@ -80,7 +97,7 @@ function QuoteForm({store}: {store: Store}) {
         useGrouping: true,
         maximumFractionDigits: 0,
       }).format(numericValue);
-      
+
       setSaleAmount(formattedValue);
     } else {
       setSaleAmount('');
@@ -94,9 +111,27 @@ function QuoteForm({store}: {store: Store}) {
       console.error('Error signing out:', err);
     }
   };
-  
+
+  const handleConfirmQuote = async () => {
+    if (!savedQuote) return;
+
+    setConfirmLoading(true);
+    try {
+      await confirmQuote(String(savedQuote.id));
+      setIsConfirmed(true);
+    } catch (err) {
+      console.error('Error confirming quote:', err);
+      setError('Error al confirmar la cotización. Por favor, intente de nuevo.');
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
   // Check if the form is valid to enable/disable the submit button
   const isFormInvalid = !clientName.trim() || !saleAmount || numberOfSpaces <= 0 || loading;
+  
+  // Check if any form field has a value to show the clear button
+  const hasFormValues = clientName.trim() !== '' || saleAmount !== '' || numberOfSpaces !== 1 || !!savedQuote;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -112,20 +147,14 @@ function QuoteForm({store}: {store: Store}) {
         </div>
 
         <div className="text-center  mb-6 ">
-          <h1 className="text-2xl font-bold text-gray-800">
-            {store.name}
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-800">{store.name}</h1>
 
           <p>Cotizador de servicios RKArtSide</p>
         </div>
 
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label
-              htmlFor="clientName"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label htmlFor="clientName" className="block text-sm font-medium text-gray-700 mb-1">
               Nombre del Cliente
             </label>
             <input
@@ -134,6 +163,7 @@ function QuoteForm({store}: {store: Store}) {
               value={clientName}
               onChange={e => setClientName(e.target.value)}
               required
+              ref={clientNameInputRef}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-required="true"
             />
@@ -193,27 +223,65 @@ function QuoteForm({store}: {store: Store}) {
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={isFormInvalid}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 ease-in-out disabled:opacity-50"
-          >
-            {loading ? 'Procesando...' : 'Cotizar'}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={isFormInvalid}
+              className={`${hasFormValues ? 'flex-grow' : 'w-full'} bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 ease-in-out disabled:opacity-50`}
+            >
+              {loading ? 'Procesando...' : 'Cotizar'}
+            </button>
+            {hasFormValues && (
+              <button
+                type="button"
+                onClick={() => {
+                  setClientName('');
+                  setNumberOfSpaces(1);
+                  setSaleAmount('');
+                  setSavedQuote(null);
+                  setIsConfirmed(false);
+                  setError('');
+                  
+                  // Focus the client name input field
+                  setTimeout(() => {
+                    clientNameInputRef.current?.focus();
+                  }, 0);
+                }}
+                className="w-28 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-3 rounded-md transition duration-200 ease-in-out"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
         </form>
 
         {error && <div className="mt-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>}
 
-        {quoteResult && (
+        {!!savedQuote?.rate_amount && (
           <div className="mt-6 p-4 border border-green-200 rounded-md bg-green-50">
             <h2 className="text-lg font-semibold text-gray-800 mb-2">Resultado de la Cotización</h2>
             <p className="text-gray-700 mb-2">
-              <strong>Cliente:</strong> {clientName}
+              <strong>Cliente:</strong> {toTitleCase(clientName.trim())}
             </p>
-            <p className="text-gray-700">
+            <p className="text-gray-700 mb-3">
               <strong>Tarifa calculada:</strong>{' '}
-              <span className="font-bold">{formatCurrency(quoteResult.rate)}</span>
+              <span className="font-bold">{formatCurrency(savedQuote.rate_amount)}</span>
             </p>
+
+            {!isConfirmed ? (
+              <button
+                type="button"
+                onClick={handleConfirmQuote}
+                disabled={confirmLoading}
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 ease-in-out disabled:opacity-50"
+              >
+                {confirmLoading ? 'Confirmando...' : 'Confirmar Cotización'}
+              </button>
+            ) : (
+              <div className="bg-blue-100 border border-blue-300 text-blue-700 px-4 py-2 rounded-md text-center">
+                ✅ Cotización confirmada exitosamente
+              </div>
+            )}
           </div>
         )}
       </div>
