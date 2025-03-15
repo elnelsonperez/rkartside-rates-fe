@@ -79,7 +79,7 @@ serve(async (req) => {
       }
         rateAmount = (960.16 * payload.number_of_spaces + 0.066354 * payload.sale_amount + 1782.41) * rateFactor
     } else {
-       rateAmount = (960.16 * payload.number_of_spaces + 1782.41) * rateFactor
+       rateAmount = (2000 * payload.number_of_spaces + 1782.41) * rateFactor
     }
 
 
