@@ -81,9 +81,14 @@ function QuoteForm({store}: {store: Store}) {
           </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">
-          RKArtSide - Cotizador de Servicios
-        </h1>
+        <div className="text-center  mb-6 ">
+          <h1 className="text-2xl font-bold text-gray-800">
+            {store.name}
+          </h1>
+
+          <p>Cotizador de servicios RKArtSide</p>
+        </div>
+
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
