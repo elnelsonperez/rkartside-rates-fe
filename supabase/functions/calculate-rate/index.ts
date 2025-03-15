@@ -84,7 +84,7 @@ serve(async (req) => {
 
 
     const response: RateResponse = {
-      rate_amount: rateAmount
+      rate_amount: Math.round(rateAmount / 100) * 100
     };
 
     return new Response(

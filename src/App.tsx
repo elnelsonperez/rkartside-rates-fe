@@ -57,11 +57,6 @@ function QuoteForm({ store }: { store: Store }) {
         ? Number(saleAmount.replace(/[^0-9]/g, ''))
         : 0;
 
-      // Only validate sale amount if it's required
-      if (requiresSaleAmount && (isNaN(saleAmountNum) || saleAmountNum <= 0)) {
-        throw new Error('El monto de venta debe ser un número positivo');
-      }
-
       // Format client name to title case
       const formattedClientName = toTitleCase(clientName.trim());
 
