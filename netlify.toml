@@ -8,18 +8,18 @@
 [functions]
   directory = "netlify/functions"
 
+# Exception for Netlify function files - must be first!
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
 # Authentication with Netlify Functions
 [[redirects]]
   from = "/*"
   to = "/.netlify/functions/middleware"
   status = 200
   force = true
-
-# Exception for Netlify function files
-[[redirects]]
-  from = "/.netlify/functions/*"
-  to = "/.netlify/functions/:splat"
-  status = 200
 
 # SPA fallback after authentication (only used after middleware redirects)
 [[redirects]]
