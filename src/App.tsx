@@ -135,25 +135,41 @@ function QuoteForm({store}: {store: Store}) {
               onChange={e => setClientName(e.target.value)}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-required="true"
             />
           </div>
 
           <div>
-            <label
-              htmlFor="numberOfSpaces"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Número de espacios a decorar
-            </label>
-            <input
-              type="number"
-              id="numberOfSpaces"
-              value={numberOfSpaces}
-              onChange={e => setNumberOfSpaces(Number(e.target.value))}
-              min="1"
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            <fieldset className="focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 rounded-md">
+              <legend className="block text-sm font-medium text-gray-700 mb-2">
+                Número de espacios a decorar
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                  <div key={num} className="relative">
+                    <input
+                      type="radio"
+                      id={`spaces-${num}`}
+                      name="numberOfSpaces"
+                      value={num}
+                      checked={numberOfSpaces === num}
+                      onChange={() => setNumberOfSpaces(num)}
+                      className="absolute opacity-0 h-0 w-0" // Hidden visually but still focusable
+                    />
+                    <label
+                      htmlFor={`spaces-${num}`}
+                      className={`w-10 h-10 flex items-center justify-center rounded-md border cursor-pointer transition-colors ${
+                        numberOfSpaces === num
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                      } focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500`}
+                    >
+                      {num}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </fieldset>
           </div>
 
           <div>
@@ -172,6 +188,7 @@ function QuoteForm({store}: {store: Store}) {
                 placeholder="0"
                 required
                 className="w-full pl-11 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-required="true"
               />
             </div>
           </div>
