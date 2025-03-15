@@ -56,26 +56,32 @@ export type Database = {
       stores: {
         Row: {
           created_at: string
+          custom_client_name_text: string | null
           id: string
           image_url: string | null
           name: string
           rate_factor: number
+          requires_sale_amount: boolean
           user_id: string
         }
         Insert: {
           created_at?: string
+          custom_client_name_text?: string | null
           id: string
           image_url?: string | null
           name: string
           rate_factor?: number
+          requires_sale_amount?: boolean
           user_id: string
         }
         Update: {
           created_at?: string
+          custom_client_name_text?: string | null
           id?: string
           image_url?: string | null
           name?: string
           rate_factor?: number
+          requires_sale_amount?: boolean
           user_id?: string
         }
         Relationships: []

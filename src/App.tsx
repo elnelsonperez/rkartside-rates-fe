@@ -29,7 +29,9 @@ function QuoteForm({ store }: { store: Store }) {
   const [loading, setLoading] = useState<boolean>(false);
   const [confirmLoading, setConfirmLoading] = useState<boolean>(false);
   const { signOut, user } = useAuth();
-  
+  const requiresSaleAmount = store.requires_sale_amount
+
+
   // References for input fields focusing
   const clientNameInputRef = useRef<HTMLInputElement>(null);
   const saleAmountInputRef = useRef<HTMLInputElement>(null);
@@ -50,9 +52,13 @@ function QuoteForm({ store }: { store: Store }) {
 
     try {
       // Parse the formatted saleAmount by removing all non-numeric characters
-      const saleAmountNum = Number(saleAmount.replace(/[^0-9]/g, ''));
+      // Default to 0 if not required or not provided
+      const saleAmountNum = requiresSaleAmount 
+        ? Number(saleAmount.replace(/[^0-9]/g, ''))
+        : 0;
 
-      if (isNaN(saleAmountNum) || saleAmountNum <= 0) {
+      // Only validate sale amount if it's required
+      if (requiresSaleAmount && (isNaN(saleAmountNum) || saleAmountNum <= 0)) {
         throw new Error('El monto de venta debe ser un número positivo');
       }
 
@@ -140,7 +146,7 @@ function QuoteForm({ store }: { store: Store }) {
   };
 
   // Check if the form is valid to enable/disable the submit button
-  const isFormInvalid = !clientName.trim() || !saleAmount || numberOfSpaces <= 0 || loading;
+  const isFormInvalid = !clientName.trim() || (requiresSaleAmount && !saleAmount) || numberOfSpaces <= 0 || loading;
   
   // Check if any form field has a value to show the clear button
   const hasFormValues = clientName.trim() !== '' || saleAmount !== '' || numberOfSpaces !== 1 || !!savedQuote;
@@ -167,7 +173,7 @@ function QuoteForm({ store }: { store: Store }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="clientName" className="block text-sm font-medium text-gray-700 mb-1">
-              Nombre del Cliente
+              { store.custom_client_name_text || "Nombre del Cliente"}
             </label>
             <input
               type="text"
@@ -176,17 +182,18 @@ function QuoteForm({ store }: { store: Store }) {
               onChange={e => setClientName(e.target.value)}
               required
               ref={clientNameInputRef}
+              disabled={isConfirmed}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-required="true"
             />
           </div>
 
           <div>
-            <fieldset className="focus-within:outline-none focus-within:ring-2 focus-within:ring-blue-500 rounded-md">
+            <fieldset className=" rounded-md">
               <legend className="block text-sm font-medium text-gray-700 mb-2">
                 Número de espacios a decorar
               </legend>
-              <div className="flex flex-wrap gap-2">
+              <div className="focus-within:outline-none focus-within:ring-1 focus-within:ring-blue-500 flex flex-wrap gap-2">
                 {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
                   <div key={num} className="relative">
                     <input
@@ -197,10 +204,12 @@ function QuoteForm({ store }: { store: Store }) {
                       checked={numberOfSpaces === num}
                       onChange={() => {
                         setNumberOfSpaces(num);
-                        // Focus the sale amount input after selection
-                        setTimeout(() => {
-                          saleAmountInputRef.current?.focus();
-                        }, 0);
+                        // Focus the sale amount input after selection only if it's required
+                        if (requiresSaleAmount) {
+                          setTimeout(() => {
+                            saleAmountInputRef.current?.focus();
+                          }, 0);
+                        }
                       }}
                       className="absolute opacity-0 h-0 w-0" // Hidden visually but still focusable
                     />
@@ -220,29 +229,31 @@ function QuoteForm({ store }: { store: Store }) {
             </fieldset>
           </div>
 
-          <div>
-            <label htmlFor="saleAmount" className="block text-sm font-medium text-gray-700 mb-1">
-              Monto total de venta (DOP)
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
-                RD$
-              </span>
-              <input
-                type="tel"
-                inputMode="numeric"
-                pattern="[0-9,]*"
-                id="saleAmount"
-                value={saleAmount}
-                onChange={handleSaleAmountChange}
-                placeholder="0"
-                required
-                ref={saleAmountInputRef}
-                className="w-full pl-11 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                aria-required="true"
-              />
+          {requiresSaleAmount && (
+            <div>
+              <label htmlFor="saleAmount" className="block text-sm font-medium text-gray-700 mb-1">
+                Monto total de venta (DOP)
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                  RD$
+                </span>
+                <input
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9,]*"
+                  id="saleAmount"
+                  value={saleAmount}
+                  onChange={handleSaleAmountChange}
+                  placeholder="0"
+                  required={requiresSaleAmount}
+                  ref={saleAmountInputRef}
+                  className="w-full pl-11 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  aria-required={requiresSaleAmount ? "true" : "false"}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="flex gap-2">
             <button

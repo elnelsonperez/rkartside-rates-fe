@@ -8,7 +8,7 @@ interface RequestPayload {
   store_id: string;
   client_name: string;
   number_of_spaces: number;
-  sale_amount: number;
+  sale_amount?: number;
 }
 
 interface RateResponse {
@@ -32,7 +32,7 @@ serve(async (req) => {
     const payload: RequestPayload = await req.json();
     
     // Basic validation
-    if (!payload.store_id || !payload.client_name || !payload.number_of_spaces || !payload.sale_amount) {
+    if (!payload.store_id || !payload.client_name || !payload.number_of_spaces) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
@@ -46,10 +46,10 @@ serve(async (req) => {
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
     );
 
-    // Fetch the store to get rate_factor
+    // Fetch the store to get rate_factor and if it requires sale amount
     const { data: store, error: storeError } = await supabaseClient
       .from('stores')
-      .select('rate_factor')
+      .select('rate_factor, requires_sale_amount, fixed_rate')
       .eq('id', payload.store_id)
       .single();
 
@@ -60,13 +60,27 @@ serve(async (req) => {
       );
     }
 
-    // Calculate the rate amount based on store rate_factor and input values
-    // Formula: sale_amount * rate_factor * number_of_spaces / 100
-    // The rate_factor is stored as a percentage (eg. 10 for 10%)
-    const rateFactor = store.rate_factor || 10; // Default to 10% if not set
-    const rateAmount = Math.round(payload.sale_amount * rateFactor * payload.number_of_spaces / 100);
+    // Check if the store requires sale amount
+    const requiresSaleAmount = !!store.requires_sale_amount;
+    const rateFactor = 1 + store.rate_factor;
 
-    // Return the calculated rate
+    let rateAmount: number;
+
+
+    if (requiresSaleAmount) {
+      if (!payload.sale_amount) {
+        return new Response(
+            JSON.stringify({ error: 'Sale amount is required for this store' }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        );
+      }
+
+      rateAmount = 2000 // placeholder
+    } else {
+      rateAmount = 1000 // placeholder
+    }
+
+
     const response: RateResponse = {
       rate_amount: rateAmount
     };
