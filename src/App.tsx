@@ -23,8 +23,9 @@ function QuoteForm({ store }: { store: Store }) {
   const [confirmLoading, setConfirmLoading] = useState<boolean>(false);
   const { signOut, user } = useAuth();
   
-  // Reference to the client name input field for focusing
+  // References for input fields focusing
   const clientNameInputRef = useRef<HTMLInputElement>(null);
+  const saleAmountInputRef = useRef<HTMLInputElement>(null);
 
   const logoUrl = store.image_url || 'https://placehold.co/600x400';
 
@@ -183,7 +184,13 @@ function QuoteForm({ store }: { store: Store }) {
                       name="numberOfSpaces"
                       value={num}
                       checked={numberOfSpaces === num}
-                      onChange={() => setNumberOfSpaces(num)}
+                      onChange={() => {
+                        setNumberOfSpaces(num);
+                        // Focus the sale amount input after selection
+                        setTimeout(() => {
+                          saleAmountInputRef.current?.focus();
+                        }, 0);
+                      }}
                       className="absolute opacity-0 h-0 w-0" // Hidden visually but still focusable
                     />
                     <label
@@ -219,6 +226,7 @@ function QuoteForm({ store }: { store: Store }) {
                 onChange={handleSaleAmountChange}
                 placeholder="0"
                 required
+                ref={saleAmountInputRef}
                 className="w-full pl-11 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 aria-required="true"
               />
