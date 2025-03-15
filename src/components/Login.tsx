@@ -8,8 +8,6 @@ export function Login() {
   const [loading, setLoading] = useState(false);
 
   const { signIn } = useAuth();
-  const logoUrl = 'https://placehold.co/600x400';
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
@@ -28,10 +26,6 @@ export function Login() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
-        <div className="flex justify-center mb-6">
-          <img src={logoUrl} alt="Logo" className="h-16 object-contain" />
-        </div>
-
         <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">Iniciar Sesión</h1>
 
         {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>}
