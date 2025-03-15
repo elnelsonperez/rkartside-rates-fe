@@ -324,10 +324,6 @@ function QuoteForm({ store }: { store: Store }) {
 function App() {
   const { user, loading, store } = useAuth();
 
-  console.log('store', store);
-  console.log('user', user);
-  console.log('loading', loading);
-
   if (loading || (user && !store)) {
     return (
       <div className="min-h-screen flex items-center justify-center">

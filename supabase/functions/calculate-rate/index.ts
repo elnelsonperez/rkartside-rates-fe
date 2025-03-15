@@ -49,7 +49,7 @@ serve(async (req) => {
     // Fetch the store to get rate_factor and if it requires sale amount
     const { data: store, error: storeError } = await supabaseClient
       .from('stores')
-      .select('rate_factor, requires_sale_amount, fixed_rate')
+      .select('rate_factor, requires_sale_amount')
       .eq('id', payload.store_id)
       .single();
 
