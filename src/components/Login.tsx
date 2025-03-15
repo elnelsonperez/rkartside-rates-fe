@@ -8,7 +8,7 @@ export function Login() {
   const [loading, setLoading] = useState(false);
 
   const { signIn } = useAuth();
-  const logoUrl = import.meta.env.VITE_LOGO_URL || 'https://placeholder.com/logo.png';
+  const logoUrl = 'https://placehold.co/600x400';
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

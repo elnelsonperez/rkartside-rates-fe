@@ -14,7 +14,7 @@ function QuoteForm({store}: {store: Store}) {
   const [loading, setLoading] = useState<boolean>(false);
   const { signOut, user } = useAuth();
 
-  const logoUrl = import.meta.env.VITE_LOGO_URL || 'https://placehold.co/600x400';
+  const logoUrl = store.image_url || 'https://placehold.co/600x400';
   const apiUrl = import.meta.env.VITE_API_URL || 'https://api.example.com';
 
   const formatCurrency = (value: number): string => {
