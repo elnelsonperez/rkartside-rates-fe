@@ -13,10 +13,15 @@
   from = "/*"
   to = "/.netlify/functions/middleware"
   status = 200
-  conditions = {Role = ["anonymous"]}
   force = true
 
-# SPA fallback after authentication
+# Exception for Netlify function files
+[[redirects]]
+  from = "/.netlify/functions/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# SPA fallback after authentication (only used after middleware redirects)
 [[redirects]]
   from = "/*"
   to = "/index.html"

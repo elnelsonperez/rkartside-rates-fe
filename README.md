@@ -60,11 +60,21 @@ When deploying to Netlify:
 
 2. These credentials will be used to authenticate users attempting to access the site.
 
-3. The authentication happens through a Netlify Function that:
-   - Intercepts all incoming requests
+3. Make sure the Netlify build process includes Functions:
+   - The `postbuild` script in package.json compiles TypeScript functions to JavaScript
+   - The netlify.toml file configures functions directory and proper redirects
+
+4. The authentication happens through a Netlify Function that:
+   - Intercepts all incoming requests via Netlify redirects
    - Verifies the authentication credentials
    - Redirects authenticated users to the requested page
    - Prompts for credentials if authentication fails
+   
+5. Troubleshooting:
+   - If authentication isn't working, check the Function logs in Netlify dashboard
+   - Make sure environment variables are properly set in Netlify
+   - Verify the redirects in netlify.toml are correctly configured
+   - The middleware.ts function includes console.log statements for debugging
 
 ## API Structure
 
