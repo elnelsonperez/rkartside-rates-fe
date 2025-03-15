@@ -68,3 +68,29 @@ export async function confirmQuote(quoteId: string): Promise<Quote> {
 
   return data;
 }
+
+/**
+ * Calculate rate amount using the Supabase Edge Function
+ */
+export async function calculateRate(
+  storeId: string,
+  clientName: string,
+  numberOfSpaces: number,
+  saleAmount: number
+): Promise<number> {
+  const { data, error } = await supabase.functions.invoke('calculate-rate', {
+    body: {
+      store_id: storeId,
+      client_name: clientName,
+      number_of_spaces: numberOfSpaces,
+      sale_amount: saleAmount
+    }
+  });
+
+  if (error) {
+    console.error('Error calculating rate:', error);
+    throw error;
+  }
+
+  return data.rate_amount;
+}

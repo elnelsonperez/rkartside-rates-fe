@@ -1,7 +1,14 @@
 import { useState, useRef, FormEvent, ChangeEvent } from 'react';
 import { useAuth } from './context/AuthContext';
 import { Login } from './components/Login';
-import { Store, createQuote, confirmQuote, InsertQuote, Quote } from './lib/api.ts';
+import { 
+  Store, 
+  createQuote, 
+  confirmQuote, 
+  calculateRate,
+  InsertQuote, 
+  Quote 
+} from './lib/api.ts';
 
 // Function to convert text to title case
 const toTitleCase = (str: string): string => {
@@ -52,14 +59,18 @@ function QuoteForm({ store }: { store: Store }) {
       // Format client name to title case
       const formattedClientName = toTitleCase(clientName.trim());
 
-      // Calculate the rate (example formula - adjust as needed)
-      // For example, rate is 10% of sale amount
-      const rateAmount = Math.round(saleAmountNum * 0.1);
-
       // Ensure user exists
       if (!user) {
         throw new Error('Usuario no autenticado');
       }
+      
+      // Calculate the rate using the server-side Edge Function
+      const rateAmount = await calculateRate(
+        store.id,
+        formattedClientName,
+        numberOfSpaces,
+        saleAmountNum
+      );
 
       // Create a new quote in Supabase
       const quoteData: InsertQuote = {
