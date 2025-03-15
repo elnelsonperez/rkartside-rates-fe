@@ -18,6 +18,8 @@ The application uses environment variables to facilitate customization per store
 1. `VITE_STORE_ID`: Unique store ID (used for rate calculation)
 2. `VITE_LOGO_URL`: URL of the store logo to be displayed in the application
 3. `VITE_API_URL`: Base URL of the API that provides the quotation service
+4. `VITE_AUTH_USERNAME`: Username for basic authentication
+5. `VITE_AUTH_PASSWORD`: Password for basic authentication
 
 ### Local Configuration
 
@@ -27,6 +29,8 @@ To configure the application locally, create a `.env` file in the project root w
 VITE_STORE_ID=STORE_ID
 VITE_LOGO_URL=LOGO_URL
 VITE_API_URL=API_URL
+VITE_AUTH_USERNAME=USERNAME
+VITE_AUTH_PASSWORD=PASSWORD
 ```
 
 ## Installation and Usage
@@ -43,6 +47,24 @@ VITE_API_URL=API_URL
 ## Deployment
 
 This application is designed to be deployed as a static site on Netlify. Make sure to configure the environment variables in Netlify for each specific store instance.
+
+### Authentication
+
+The application includes basic authentication to protect access to the quoting system. Authentication is implemented using Netlify Functions, which check for valid credentials before allowing access to the application.
+
+When deploying to Netlify:
+
+1. Add the following environment variables in Netlify's dashboard:
+   - `VITE_AUTH_USERNAME`: The username for accessing the application
+   - `VITE_AUTH_PASSWORD`: The password for accessing the application
+
+2. These credentials will be used to authenticate users attempting to access the site.
+
+3. The authentication happens through a Netlify Function that:
+   - Intercepts all incoming requests
+   - Verifies the authentication credentials
+   - Redirects authenticated users to the requested page
+   - Prompts for credentials if authentication fails
 
 ## API Structure
 

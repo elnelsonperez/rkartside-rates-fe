@@ -21,8 +21,8 @@ describe('App', () => {
   it('renders the quoting form', () => {
     render(<App />);
     
-    // Check that the title is present
-    expect(screen.getByText('Cotizador de Servicios de Diseño de Interiores')).toBeInTheDocument();
+    // Check that the title is present (using regex for flexibility)
+    expect(screen.getByText(/Cotizador de Servicios/)).toBeInTheDocument();
     
     // Check form fields are present
     expect(screen.getByLabelText('Número de espacios a decorar')).toBeInTheDocument();

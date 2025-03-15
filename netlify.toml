@@ -5,6 +5,18 @@
 [build.environment]
   NODE_VERSION = "22.14.0"
 
+[functions]
+  directory = "netlify/functions"
+
+# Authentication with Netlify Functions
+[[redirects]]
+  from = "/*"
+  to = "/.netlify/functions/middleware"
+  status = 200
+  conditions = {Role = ["anonymous"]}
+  force = true
+
+# SPA fallback after authentication
 [[redirects]]
   from = "/*"
   to = "/index.html"
