@@ -3,8 +3,10 @@ import axios from 'axios';
 import { QuoteRequest, QuoteResponse } from './types';
 import { useAuth } from './context/AuthContext';
 import { Login } from './components/Login';
+import {Store} from "./lib/api.ts";
 
-function QuoteForm() {
+function QuoteForm({store}: {store: Store}) {
+
   const [numberOfSpaces, setNumberOfSpaces] = useState<number>(1);
   const [saleAmount, setSaleAmount] = useState<string>('');
   const [quoteResult, setQuoteResult] = useState<QuoteResponse | null>(null);
@@ -13,7 +15,6 @@ function QuoteForm() {
   const { signOut, user } = useAuth();
 
   const logoUrl = import.meta.env.VITE_LOGO_URL || 'https://placehold.co/600x400';
-  const storeId = import.meta.env.VITE_STORE_ID || '1';
   const apiUrl = import.meta.env.VITE_API_URL || 'https://api.example.com';
 
   const formatCurrency = (value: number): string => {
@@ -38,7 +39,7 @@ function QuoteForm() {
       }
 
       const quoteRequest: QuoteRequest = {
-        store_id: storeId,
+        store_id: store.id,
         number_of_spaces: numberOfSpaces,
         sale_amount: saleAmountNum,
       };
@@ -149,9 +150,9 @@ function QuoteForm() {
 }
 
 function App() {
-  const { user, loading } = useAuth();
+  const { user, loading, store } = useAuth();
 
-  if (loading) {
+  if (loading || !store) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -159,7 +160,7 @@ function App() {
     );
   }
 
-  return user ? <QuoteForm /> : <Login />;
+  return user ? <QuoteForm store={store} /> : <Login />;
 }
 
 export default App;

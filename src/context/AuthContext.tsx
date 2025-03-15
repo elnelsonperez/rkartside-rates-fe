@@ -1,9 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { User } from '../types';
+import { Store, getStoreByUserId } from '../lib/api';
 
 interface AuthContextType {
   user: User | null;
+  store: Store | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -13,7 +15,27 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [store, setStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Fetch store when user changes
+  useEffect(() => {
+    const fetchUserStore = async () => {
+      if (user) {
+        try {
+          const userStore = await getStoreByUserId(user.id);
+          setStore(userStore);
+        } catch (error) {
+          console.error('Error fetching user store:', error);
+          setStore(null);
+        }
+      } else {
+        setStore(null);
+      }
+    };
+
+    fetchUserStore();
+  }, [user]);
 
   useEffect(() => {
     // Check for active session on mount
@@ -85,6 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = {
     user,
+    store,
     loading,
     signIn,
     signOut,
