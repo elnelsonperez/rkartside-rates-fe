@@ -8,8 +8,14 @@ export interface QuoteResponse {
   rate: number;
 }
 
+export interface User {
+  id: string;
+  email?: string;
+  created_at?: string;
+}
+
 // Just export the types we need
-export type { }
+export type {};
 
 // Add the Vite environment variables type
 declare global {
@@ -17,6 +23,8 @@ declare global {
     readonly VITE_STORE_ID: string;
     readonly VITE_LOGO_URL: string;
     readonly VITE_API_URL: string;
+    readonly VITE_SUPABASE_URL: string;
+    readonly VITE_SUPABASE_ANON_KEY: string;
   }
 
   interface ImportMeta {
