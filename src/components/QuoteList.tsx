@@ -112,7 +112,7 @@ export function QuoteList() {
       setSelectedStatus('');
     },
   });
-  
+
   // Single quote status update mutation
   const singleStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) => {
@@ -121,12 +121,12 @@ export function QuoteList() {
     },
     onSuccess: () => {
       // Just invalidate and refetch the quotes query
-      console.log("Status update successful, invalidating queries");
+      console.log('Status update successful, invalidating queries');
       queryClient.invalidateQueries({ queryKey: ['quotes'] });
     },
-    onError: (error) => {
-      console.error("Status update failed:", error);
-    }
+    onError: error => {
+      console.error('Status update failed:', error);
+    },
   });
 
   // Trigger next page fetch when last item is in view
@@ -202,42 +202,41 @@ export function QuoteList() {
       label: 'PENDIENTE',
       bg: 'bg-gray-100',
       text: 'text-gray-800',
-      hoverBg: 'hover:bg-gray-200'
+      hoverBg: 'hover:bg-gray-200',
     },
     in_progress: {
       label: 'EN PROCESO',
       bg: 'bg-yellow-100',
       text: 'text-yellow-800',
-      hoverBg: 'hover:bg-yellow-200'
+      hoverBg: 'hover:bg-yellow-200',
     },
     ignored: {
       label: 'IGNORADO',
       bg: 'bg-red-100',
       text: 'text-red-800',
-      hoverBg: 'hover:bg-red-200'
+      hoverBg: 'hover:bg-red-200',
     },
     completed: {
       label: 'COMPLETADO',
       bg: 'bg-green-100',
       text: 'text-green-800',
-      hoverBg: 'hover:bg-green-200'
+      hoverBg: 'hover:bg-green-200',
     },
   };
-  
+
   // Status dropdown state - track which row has open dropdown
   const [openStatusDropdown, setOpenStatusDropdown] = useState<number | null>(null);
-  
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       // Check if the click is inside a dropdown button
       const target = event.target as HTMLElement;
-      if (!target.closest('.status-dropdown-button') && 
-          !target.closest('.status-dropdown-menu')) {
+      if (!target.closest('.status-dropdown-button') && !target.closest('.status-dropdown-menu')) {
         setOpenStatusDropdown(null);
       }
     };
-    
+
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -258,18 +257,18 @@ export function QuoteList() {
       </span>
     );
   };
-  
+
   // Render status cell with dropdown
-  const StatusCell = ({ value, row }: { value: string | null, row: any }) => {
+  const StatusCell = ({ value, row }: { value: string | null; row: any }) => {
     const quoteId = row.original.id;
     const currentStatus = value || 'pending';
     const isOpen = openStatusDropdown === quoteId;
-    
+
     const handleStatusClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       setOpenStatusDropdown(isOpen ? null : quoteId);
     };
-    
+
     // Track if this component is mounted
     const isMounted = useRef(true);
     useEffect(() => {
@@ -277,7 +276,7 @@ export function QuoteList() {
         isMounted.current = false;
       };
     }, []);
-    
+
     const updateStatus = (status: string) => {
       if (status !== currentStatus) {
         console.log(`Updating quote ${quoteId} status from "${currentStatus}" to "${status}"`);
@@ -289,15 +288,15 @@ export function QuoteList() {
                 console.log(`Successfully updated quote ${quoteId} status to "${status}"`);
               }
             },
-            onError: (error) => {
+            onError: error => {
               console.error(`Error updating quote ${quoteId} status:`, error);
-            }
+            },
           }
         );
       }
       setOpenStatusDropdown(null);
     };
-    
+
     return (
       <div className="relative">
         <button
@@ -308,31 +307,37 @@ export function QuoteList() {
         >
           <div className="flex items-center cursor-pointer group">
             {getStatusBadge(currentStatus)}
-            <svg 
-              className={`ml-1 w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className={`ml-1 w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </div>
         </button>
-        
+
         {isOpen && (
-          <div 
-            className="status-dropdown-menu fixed z-50 mt-1 w-44 bg-white rounded-md shadow-lg py-1" 
+          <div
+            className="status-dropdown-menu fixed z-50 mt-1 w-44 bg-white rounded-md shadow-lg py-1"
             style={{
               position: 'absolute',
               top: '100%',
               left: '0',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
             }}
-            data-quote-id={quoteId}>
+            data-quote-id={quoteId}
+          >
             {Object.entries(statusConfig).map(([key, config]) => (
               <button
                 key={key}
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation(); // Prevent row selection when clicking buttons
                   updateStatus(key);
                 }}
@@ -342,15 +347,25 @@ export function QuoteList() {
               >
                 <span>{config.label}</span>
                 {currentStatus === key && (
-                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  <svg
+                    className="w-4 h-4 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                 )}
               </button>
             ))}
           </div>
         )}
-        
+
         {singleStatusMutation.isPending && singleStatusMutation.variables?.id === quoteId && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
             <div className="w-5 h-5 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -683,13 +698,6 @@ export function QuoteList() {
           </div>
         </div>
 
-        {/* Loading state */}
-        {status === 'pending' && (
-          <div className="flex justify-center items-center h-12">
-            <LoadingSpinner />
-          </div>
-        )}
-
         {/* Error state */}
         {status === 'error' && (
           <div className="text-center text-red-600 p-4">
@@ -704,9 +712,20 @@ export function QuoteList() {
           </div>
         )}
 
-        {/* Tanstack Table */}
-        {status === 'success' && quotes.length > 0 && (
-          <div className="overflow-x-auto min-h-[400px]">
+        {/* Tanstack Table with loading overlay */}
+        <div className="overflow-x-auto min-h-[400px] relative">
+          {/* Loading overlay */}
+          {status === 'pending' && (
+            <div className="absolute inset-0 bg-white bg-opacity-75 flex justify-center items-center z-40">
+              <div className="bg-white rounded-lg p-4 shadow-lg">
+                <LoadingSpinner fullScreen={false} size="large" />
+                <p className="text-gray-600 mt-2 text-center">Cargando cotizaciones...</p>
+              </div>
+            </div>
+          )}
+
+          {/* Only show table if we have data */}
+          {status === 'success' && quotes.length > 0 && (
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 {table.getHeaderGroups().map(headerGroup => (
@@ -750,10 +769,12 @@ export function QuoteList() {
                       onClick={() => row.toggleSelected(!row.getIsSelected())}
                     >
                       {row.getVisibleCells().map(cell => (
-                        <td 
-                          key={cell.id} 
+                        <td
+                          key={cell.id}
                           className="px-2 py-4 whitespace-nowrap"
-                          onClick={cell.column.id === 'status' ? (e) => e.stopPropagation() : undefined}
+                          onClick={
+                            cell.column.id === 'status' ? e => e.stopPropagation() : undefined
+                          }
                         >
                           <div className="text-sm text-gray-900">
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -765,15 +786,18 @@ export function QuoteList() {
                 })}
               </tbody>
             </table>
-          </div>
-        )}
+          )}
 
-        {/* Loading indicator for fetching more */}
-        {(isFetchingNextPage || (isFetching && !isFetchingNextPage)) && (
-          <div className="py-4 text-center">
-            <LoadingSpinner />
-          </div>
-        )}
+          {/* Loading indicator for fetching more - as overlay */}
+          {(isFetchingNextPage || (isFetching && !isFetchingNextPage && status !== 'pending')) && (
+            <div className="absolute inset-0 bg-white bg-opacity-60 flex justify-center items-center z-40">
+              <div className="bg-white rounded-lg p-3 shadow-md">
+                <LoadingSpinner fullScreen={false} size="medium" />
+                <p className="text-gray-600 mt-2 text-sm text-center">Actualizando datos...</p>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Confirmation Dialog */}
         {showConfirmDialog && (
