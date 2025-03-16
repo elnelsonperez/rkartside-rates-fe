@@ -48,26 +48,6 @@ export function Navbar() {
           <div className="flex items-center space-x-6">
             <span className="font-bold text-lg">RKArtSide</span>
 
-            {/* Navigation Links */}
-            <nav className="flex items-center space-x-4">
-              <Link
-                to="/"
-                activeProps={{ className: 'text-white font-medium' }}
-                inactiveProps={{ className: 'text-gray-300 hover:text-white' }}
-                className="transition duration-150 ease-in-out"
-              >
-                Cotizar
-              </Link>
-              <Link
-                to="/quotes"
-                activeProps={{ className: 'text-white font-medium' }}
-                inactiveProps={{ className: 'text-gray-300 hover:text-white' }}
-                className="transition duration-150 ease-in-out"
-              >
-                Cotizaciones
-              </Link>
-            </nav>
-
             {/* Store selector dropdown */}
             <div className="relative" onClick={e => e.stopPropagation()}>
               <button
@@ -107,6 +87,26 @@ export function Navbar() {
                 </div>
               )}
             </div>
+
+            {/* Navigation Links */}
+            <nav className="flex items-center space-x-4">
+              <Link
+                to="/"
+                activeProps={{ className: 'text-white font-medium' }}
+                inactiveProps={{ className: 'text-gray-300 hover:text-white' }}
+                className="transition duration-150 ease-in-out"
+              >
+                Cotizar
+              </Link>
+              <Link
+                to="/quotes"
+                activeProps={{ className: 'text-white font-medium' }}
+                inactiveProps={{ className: 'text-gray-300 hover:text-white' }}
+                className="transition duration-150 ease-in-out"
+              >
+                Cotizaciones
+              </Link>
+            </nav>
           </div>
 
           <div className="flex items-center space-x-4">
@@ -149,7 +149,7 @@ export function Navbar() {
                 />
               </svg>
             </button>
-            <span className="font-bold text-lg ml-3">Admin</span>
+            <span className="font-bold text-lg ml-3">RKArtSide</span>
           </div>
 
           <div className="text-sm truncate max-w-[150px]">
