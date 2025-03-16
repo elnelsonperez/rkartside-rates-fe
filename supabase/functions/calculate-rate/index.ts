@@ -78,8 +78,18 @@ serve(async (req) => {
         );
       }
 
-      const k = 0.0018;
-      const baseRatePerSpace = 800 + k * payload.sale_amount;
+    let k = 0.0016;
+    if (payload.sale_amount > 120000) {
+      // keep values under 120k cheap
+      k = 0.0025;
+    }
+
+    if (payload.number_of_spaces > 2) {
+      // increase rate for more than 2 spaces
+      k += 0.006;
+    }
+
+    const baseRatePerSpace = 800 + k * payload.sale_amount;
 
       rateAmount = (baseRatePerSpace * payload.number_of_spaces + 0.066354 * payload.sale_amount + 1782.41) * rateFactor
     } else {
