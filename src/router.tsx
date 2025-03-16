@@ -1,9 +1,9 @@
-import { 
-  createRootRoute, 
-  createRoute, 
+import {
+  createRootRoute,
+  createRoute,
   createRouter,
   Outlet,
-  redirect
+  redirect,
 } from '@tanstack/react-router';
 import { QuoteForm } from './components/QuoteForm';
 import { QuoteList } from './components/QuoteList';
@@ -25,19 +25,19 @@ const loginRoute = createRoute({
   component: LoginPage,
   beforeLoad: async () => {
     const { user, isLoading } = useAuthStore.getState();
-    
+
     // Wait for auth to initialize
     if (isLoading) {
       return <LoadingSpinner />;
     }
-    
+
     // If already authenticated, redirect to home
     if (user) {
       throw redirect({
-        to: '/'
+        to: '/',
       });
     }
-  }
+  },
 });
 
 // Protected layout route (requires authentication)
@@ -47,22 +47,22 @@ const protectedLayout = createRoute({
   component: ProtectedLayout,
   beforeLoad: async ({ location }) => {
     const { user, isLoading } = useAuthStore.getState();
-    
+
     // Wait for auth to initialize
     if (isLoading) {
       return <LoadingSpinner />;
     }
-    
+
     // Redirect to login if not authenticated
     if (!user) {
       // Store the current path to redirect back after login
       const returnTo = location.pathname + location.search;
       throw redirect({
         to: '/login',
-        search: { returnTo }
+        search: { returnTo },
       });
     }
-  }
+  },
 });
 
 // Admin layout route (requires admin permission)
@@ -72,14 +72,14 @@ const adminLayout = createRoute({
   component: AdminLayout,
   beforeLoad: async () => {
     const { isAdmin } = useAuthStore.getState();
-    
+
     // Redirect non-admins
     if (!isAdmin) {
       throw redirect({
-        to: '/'
+        to: '/',
       });
     }
-  }
+  },
 });
 
 // Create the index route (QuoteForm)
@@ -93,18 +93,13 @@ const indexRoute = createRoute({
 const quotesRoute = createRoute({
   getParentRoute: () => adminLayout,
   path: '/quotes',
-  component: QuoteList
+  component: QuoteList,
 });
 
 // Create and export the router
 const routeTree = rootRoute.addChildren([
   loginRoute,
-  protectedLayout.addChildren([
-    indexRoute,
-    adminLayout.addChildren([
-      quotesRoute,
-    ]),
-  ]),
+  protectedLayout.addChildren([indexRoute, adminLayout.addChildren([quotesRoute])]),
 ]);
 
 export const router = createRouter({ routeTree });

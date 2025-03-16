@@ -1,12 +1,7 @@
 import { useState, useRef, FormEvent, ChangeEvent } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { 
-  createQuote, 
-  confirmQuote, 
-  calculateRate,
-  InsertQuote, 
-  Quote 
-} from '../lib/api.ts';
+import { createQuote, confirmQuote, calculateRate, InsertQuote, Quote } from '../lib/api.ts';
+import { useLogout } from '../hooks/useLogout.ts';
 
 // Function to convert text to title case
 const toTitleCase = (str: string): string => {
@@ -18,8 +13,8 @@ const toTitleCase = (str: string): string => {
 };
 
 export function QuoteForm() {
-  const { user, signOut, currentStore } = useAuth();
-
+  const { user, currentStore } = useAuth();
+  const logout = useLogout();
   const [clientName, setClientName] = useState<string>('');
   const [numberOfSpaces, setNumberOfSpaces] = useState<number>(1);
   const [saleAmount, setSaleAmount] = useState<string>('');
@@ -48,7 +43,6 @@ export function QuoteForm() {
   const store = currentStore;
   const requiresSaleAmount = store.requires_sale_amount;
 
-
   const logoUrl = store.image_url || 'https://placehold.co/600x400';
 
   const formatCurrency = (value: number): string => {
@@ -66,9 +60,7 @@ export function QuoteForm() {
     try {
       // Parse the formatted saleAmount by removing all non-numeric characters
       // Default to 0 if not required or not provided
-      const saleAmountNum = requiresSaleAmount 
-        ? Number(saleAmount.replace(/[^0-9]/g, ''))
-        : 0;
+      const saleAmountNum = requiresSaleAmount ? Number(saleAmount.replace(/[^0-9]/g, '')) : 0;
 
       // Format client name to title case
       const formattedClientName = toTitleCase(clientName.trim());
@@ -77,7 +69,7 @@ export function QuoteForm() {
       if (!user) {
         throw new Error('Usuario no autenticado');
       }
-      
+
       // Calculate the rate using the server-side Edge Function
       const rateAmount = await calculateRate(
         store.id,
@@ -117,7 +109,7 @@ export function QuoteForm() {
     if (savedQuote) {
       setSavedQuote(null);
     }
-  }
+  };
 
   const handleSaleAmountChange = (e: ChangeEvent<HTMLInputElement>): void => {
     // Remove non-numeric characters
@@ -169,12 +161,14 @@ export function QuoteForm() {
     setTimeout(() => {
       clientNameInputRef.current?.focus();
     }, 0);
-  }
+  };
   // Check if the form is valid to enable/disable the submit button
-  const isFormInvalid = !clientName.trim() || (requiresSaleAmount && !saleAmount) || numberOfSpaces <= 0 || loading;
-  
+  const isFormInvalid =
+    !clientName.trim() || (requiresSaleAmount && !saleAmount) || numberOfSpaces <= 0 || loading;
+
   // Check if any form field has a value to show the clear button
-  const hasFormValues = clientName.trim() !== '' || saleAmount !== '' || numberOfSpaces !== 1 || !!savedQuote;
+  const hasFormValues =
+    clientName.trim() !== '' || saleAmount !== '' || numberOfSpaces !== 1 || !!savedQuote;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
@@ -182,10 +176,13 @@ export function QuoteForm() {
         <div className="flex justify-between items-center mb-6">
           <img src={logoUrl} alt="Logo" className="h-16 object-contain" />
           {/* Show email and sign out link for non-admin users (admins see these in the navbar) */}
-          {(!user?.isAdmin) && (
+          {!user?.isAdmin && (
             <div className="flex flex-col items-end">
               {user?.email && <span className="text-sm text-gray-600 mb-1">{user.email}</span>}
-              <button onClick={() => signOut()} className="text-sm text-blue-600 hover:text-blue-800">
+              <button
+                onClick={() => logout()}
+                className="text-sm text-blue-600 hover:text-blue-800"
+              >
                 Cerrar Sesión
               </button>
             </div>
@@ -200,7 +197,7 @@ export function QuoteForm() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="clientName" className="block text-sm font-medium text-gray-700 mb-1">
-              { store.custom_client_name_text || "Nombre del Cliente"}
+              {store.custom_client_name_text || 'Nombre del Cliente'}
             </label>
             <input
               type="text"
@@ -267,7 +264,7 @@ export function QuoteForm() {
                   placeholder="0"
                   required={requiresSaleAmount}
                   className="w-full pl-11 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-required={requiresSaleAmount ? "true" : "false"}
+                  aria-required={requiresSaleAmount ? 'true' : 'false'}
                 />
               </div>
             </div>
@@ -316,17 +313,19 @@ export function QuoteForm() {
                 {confirmLoading ? 'Confirmando...' : 'Confirmar Cotización'}
               </button>
             ) : (
-                <>
-                  <div className="bg-blue-100 border border-blue-300 text-blue-700 px-4 py-2 rounded-md text-center">
-                    ✅ Cotización confirmada exitosamente
-                  </div>
+              <>
+                <div className="bg-blue-100 border border-blue-300 text-blue-700 px-4 py-2 rounded-md text-center">
+                  ✅ Cotización confirmada exitosamente
+                </div>
 
-                  <button type="button"
-                          onClick={handleLimpiar}
-                          className="mt-4 cursor-pointer w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 ease-in-out disabled:opacity-50">
-                    Hacer otra cotización
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={handleLimpiar}
+                  className="mt-4 cursor-pointer w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200 ease-in-out disabled:opacity-50"
+                >
+                  Hacer otra cotización
+                </button>
+              </>
             )}
           </div>
         )}

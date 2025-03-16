@@ -3,10 +3,7 @@ interface LoadingSpinnerProps {
   size?: 'small' | 'medium' | 'large';
 }
 
-export function LoadingSpinner({ 
-  fullScreen = true, 
-  size = 'medium' 
-}: LoadingSpinnerProps) {
+export function LoadingSpinner({ fullScreen = true, size = 'medium' }: LoadingSpinnerProps) {
   // Size mappings
   const sizeClasses = {
     small: 'h-8 w-8 border-t-2 border-b-2',
@@ -18,19 +15,15 @@ export function LoadingSpinner({
   if (fullScreen) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div 
-          className={`animate-spin rounded-full ${sizeClasses[size]} border-blue-500`}
-        ></div>
+        <div className={`animate-spin rounded-full ${sizeClasses[size]} border-blue-500`}></div>
       </div>
     );
   }
-  
+
   // Otherwise just return the spinner itself
   return (
     <div className="flex items-center justify-center p-4">
-      <div 
-        className={`animate-spin rounded-full ${sizeClasses[size]} border-blue-500`}
-      ></div>
+      <div className={`animate-spin rounded-full ${sizeClasses[size]} border-blue-500`}></div>
     </div>
   );
 }

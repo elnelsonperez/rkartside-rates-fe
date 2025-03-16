@@ -8,7 +8,7 @@ interface AuthState {
   isAdmin: boolean;
   currentStore: Store | null;
   isLoading: boolean;
-  
+
   initialize: () => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -16,30 +16,33 @@ interface AuthState {
   setCurrentStore: (store: Store | null) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>(set => ({
   user: null,
   isAdmin: false,
   currentStore: null,
   isLoading: true,
-  
+
   initialize: async () => {
     set({ isLoading: true });
-    
+
     try {
       // Check current session
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
       if (error) {
         throw error;
       }
-      
+
       if (session?.user) {
         set({
           user: {
             id: session.user.id,
             email: session.user.email,
             created_at: session.user.created_at,
-          }
+          },
         });
       }
     } catch (error) {
@@ -47,7 +50,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     } finally {
       set({ isLoading: false });
     }
-    
+
     // Subscribe to auth changes
     supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
@@ -56,42 +59,42 @@ export const useAuthStore = create<AuthState>((set) => ({
             id: session.user.id,
             email: session.user.email,
             created_at: session.user.created_at,
-          }
+          },
         });
       } else {
-        set({ 
+        set({
           user: null,
           isAdmin: false,
-          currentStore: null
+          currentStore: null,
         });
       }
-      
+
       set({ isLoading: false });
     });
   },
-  
-  setIsAdmin: (isAdmin) => {
+
+  setIsAdmin: isAdmin => {
     set({ isAdmin });
   },
-  
-  setCurrentStore: (store) => {
+
+  setCurrentStore: store => {
     set({ currentStore: store });
   },
-  
+
   login: async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
   },
-  
+
   logout: async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    
+
     // Clear local state
-    set({ 
+    set({
       user: null,
       isAdmin: false,
-      currentStore: null
+      currentStore: null,
     });
-  }
+  },
 }));

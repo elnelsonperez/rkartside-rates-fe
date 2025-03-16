@@ -25,11 +25,9 @@ export function useStores() {
 
   // Determine which query to use based on admin status
   const activeQuery = isAdmin ? allStoresQuery : userStoreQuery;
-  
+
   return {
-    stores: isAdmin 
-      ? (allStoresQuery.data || []) 
-      : (userStoreQuery.data ? [userStoreQuery.data] : []),
+    stores: isAdmin ? allStoresQuery.data || [] : userStoreQuery.data ? [userStoreQuery.data] : [],
     isLoading: activeQuery.isLoading,
     isFetching: activeQuery.isFetching,
     error: activeQuery.error,

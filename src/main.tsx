@@ -23,12 +23,12 @@ const queryClient = new QueryClient({
 // App component that initializes auth and provides the router
 function App() {
   const { initialize, isLoading } = useAuthStore();
-  
+
   // Initialize auth when the app starts
   useEffect(() => {
     void initialize();
   }, [initialize]);
-  
+
   // Show a loading spinner while auth is initializing
   if (isLoading) {
     return (
@@ -37,7 +37,7 @@ function App() {
       </div>
     );
   }
-  
+
   return (
     <AuthProvider>
       <UserMetadataProvider>

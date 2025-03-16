@@ -17,29 +17,23 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   // Use the auth store directly
-  const {
-    user,
-    isAdmin,
-    isLoading,
-    currentStore,
-    setCurrentStore,
-    setIsAdmin,
-    login,
-    logout
-  } = useAuthStore();
+  const { user, isAdmin, isLoading, currentStore, setCurrentStore, setIsAdmin, login, logout } =
+    useAuthStore();
 
   // Map the auth store values to the existing context interface
   const value: AuthContextType = {
-    user: user ? {
-      ...user,
-      isAdmin
-    } : null,
+    user: user
+      ? {
+          ...user,
+          isAdmin,
+        }
+      : null,
     loading: isLoading,
     currentStore,
     setCurrentStore,
     updateUserIsAdmin: setIsAdmin,
     signIn: login,
-    signOut: logout
+    signOut: logout,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
