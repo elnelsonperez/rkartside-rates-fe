@@ -341,46 +341,13 @@ export function QuoteList() {
   return (
     <div className="container mx-auto p-4">
       <div className="bg-white rounded-lg shadow-md p-6">
-        {/* Redesigned header for better mobile experience */}
-        <div className="flex flex-col gap-4 mb-6">
-          {/* Hidden on mobile when items are selected */}
-          <h1 className={`text-2xl font-bold `}>Cotizaciones</h1>
-          
-          {/* Main actions row - always visible */}
-          <div className="flex flex-wrap justify-between gap-2">
-            {/* Selection actions - shows when items are selected */}
-            {selectedCount > 0 && (
-              <div className="flex flex-wrap items-center gap-2 mr-2">
-                <span className="text-sm font-medium text-gray-600">
-                  {selectedCount} {selectedCount === 1 ? 'seleccionada' : 'seleccionadas'}
-                </span>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => setShowStatusDialog(true)}
-                    title="Cambiar estado"
-                    className="bg-blue-100 hover:bg-blue-200 text-blue-800 p-2 sm:px-3 sm:py-1 rounded-md text-sm font-medium transition-colors flex items-center"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                    </svg>
-                    <span className="hidden sm:inline">Cambiar estado</span>
-                  </button>
-                  <button
-                    onClick={() => setShowConfirmDialog(true)}
-                    title="Eliminar"
-                    className="bg-red-100 hover:bg-red-200 text-red-800 p-2 sm:px-3 sm:py-1 rounded-md text-sm font-medium transition-colors flex items-center"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                    <span className="hidden sm:inline">Eliminar</span>
-                  </button>
-                </div>
-              </div>
-            )}
+        {/* Header with title and filters */}
+        <div className="flex flex-col gap-4 mb-3">
+          <div className="flex flex-wrap justify-between items-center mb-1">
+            <h1 className="text-2xl font-bold">Cotizaciones</h1>
             
             {/* Filter actions - always visible */}
-            <div className="flex flex-wrap gap-1 ml-auto">
+            <div className="flex flex-wrap gap-1 mt-2 sm:mt-0">
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="bg-gray-100 hover:bg-gray-200 text-gray-800 p-2 sm:px-3 sm:py-1 rounded-md text-sm font-medium transition-colors flex items-center"
@@ -424,14 +391,37 @@ export function QuoteList() {
             </div>
           </div>
         </div>
-        
-        {/* Store information */}
-        <p className="text-gray-600 mb-6">
-          {filters.showAllStores 
-            ? 'Mostrando cotizaciones de todas las tiendas' 
-            : `Mostrando cotizaciones para ${currentStore?.name}`
-          }
-        </p>
+
+        {/* Selection actions bar - separate and prominent */}
+        {selectedCount > 0 && (
+          <div className="flex flex-wrap items-center justify-between bg-blue-50 p-3 rounded-md border border-blue-100 mb-1">
+            <span className="text-sm font-medium text-blue-800">
+              {selectedCount} {selectedCount === 1 ? 'cotización seleccionada' : 'cotizaciones seleccionadas'}
+            </span>
+            <div className="flex gap-2 mt-2 sm:mt-0">
+              <button
+                onClick={() => setShowStatusDialog(true)}
+                className="bg-white hover:bg-blue-50 text-blue-800 px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                </svg>
+                <span className="hidden xs:inline">Cambiar estado</span>
+                <span className="xs:hidden">Estado</span>
+              </button>
+              <button
+                onClick={() => setShowConfirmDialog(true)}
+                className="bg-white hover:bg-red-50 text-red-800 px-3 py-1.5 rounded-md text-sm font-medium transition-colors flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span className="hidden xs:inline">Eliminar</span>
+                <span className="xs:hidden">Eliminar</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Collapsible Filters */}
         <div 
