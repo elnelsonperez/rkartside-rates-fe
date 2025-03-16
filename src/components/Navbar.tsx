@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { useAuth } from '../context/AuthContext';
 import { useStores } from '../hooks/useStores';
 import { Store } from '../lib/api';
@@ -7,6 +7,7 @@ import { Store } from '../lib/api';
 export function Navbar() {
   const { user, currentStore, setCurrentStore, signOut } = useAuth();
   const { stores } = useStores();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -33,6 +34,8 @@ export function Navbar() {
   const handleSignOut = async () => {
     try {
       await signOut();
+      // Redirect to login page after successful logout
+      navigate({ to: '/login' });
     } catch (err) {
       console.error('Error signing out:', err);
     }

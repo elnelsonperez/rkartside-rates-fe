@@ -1,83 +1,109 @@
-import {
-  createRootRoute,
-  createRoute,
+import { 
+  createRootRoute, 
+  createRoute, 
   createRouter,
-  Outlet, useNavigate
+  Outlet,
+  redirect
 } from '@tanstack/react-router';
 import { QuoteForm } from './components/QuoteForm';
 import { QuoteList } from './components/QuoteList';
-import { RootLayout } from './components/RootLayout';
-import { Login } from './components/Login';
+import { LoginPage } from './components/LoginPage';
+import { ProtectedLayout } from './components/ProtectedLayout';
+import { AdminLayout } from './components/AdminLayout';
 import { LoadingSpinner } from './components/LoadingSpinner';
-import { useAuth } from './context/AuthContext';
-import {useEffect} from "react";
+import { useAuthStore } from './lib/auth-store';
 
 // Create the root route
 const rootRoute = createRootRoute({
   component: () => <Outlet />,
 });
 
-// Create authenticated layout route
-const authenticatedLayout = createRoute({
+// Login route
+const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
-  id: 'authenticated',
-  component: () => {
-    const { user, loading } = useAuth();
+  path: '/login',
+  component: LoginPage,
+  beforeLoad: async () => {
+    const { user, isLoading } = useAuthStore.getState();
     
-    // Show loading spinner while checking auth
-    if (loading) {
+    // Wait for auth to initialize
+    if (isLoading) {
       return <LoadingSpinner />;
     }
     
-    // If no user, return Login component
-    if (!user) {
-      return <Login />;
+    // If already authenticated, redirect to home
+    if (user) {
+      throw redirect({
+        to: '/'
+      });
+    }
+  }
+});
+
+// Protected layout route (requires authentication)
+const protectedLayout = createRoute({
+  getParentRoute: () => rootRoute,
+  id: 'protected',
+  component: ProtectedLayout,
+  beforeLoad: async ({ location }) => {
+    const { user, isLoading } = useAuthStore.getState();
+    
+    // Wait for auth to initialize
+    if (isLoading) {
+      return <LoadingSpinner />;
     }
     
-    // If authenticated, render the layout with outlet
-    return <RootLayout />;
-  },
-  beforeLoad: async () => {
-    // We could also do server-side auth checking here if needed
-    // For example, check if a token is valid via API
-    // For now, this is handled in the component itself
+    // Redirect to login if not authenticated
+    if (!user) {
+      // Store the current path to redirect back after login
+      const returnTo = location.pathname + location.search;
+      throw redirect({
+        to: '/login',
+        search: { returnTo }
+      });
+    }
+  }
+});
 
-    // Alternatively, we could use router.navigate to redirect
-    // if no auth, but we choose to render Login in the component
-  },
+// Admin layout route (requires admin permission)
+const adminLayout = createRoute({
+  getParentRoute: () => protectedLayout,
+  id: 'admin',
+  component: AdminLayout,
+  beforeLoad: async () => {
+    const { isAdmin } = useAuthStore.getState();
+    
+    // Redirect non-admins
+    if (!isAdmin) {
+      throw redirect({
+        to: '/'
+      });
+    }
+  }
 });
 
 // Create the index route (QuoteForm)
 const indexRoute = createRoute({
-  getParentRoute: () => authenticatedLayout,
+  getParentRoute: () => protectedLayout,
   path: '/',
   component: QuoteForm,
 });
 
 // Create the quotes list route (admin only)
 const quotesRoute = createRoute({
-  getParentRoute: () => authenticatedLayout,
+  getParentRoute: () => adminLayout,
   path: '/quotes',
-  component: () => {
-    const { user } = useAuth();
-    const navigate = useNavigate();
-    
-    // Redirect non-admin users
-    useEffect(() => {
-      if (!user?.isAdmin) {
-        void navigate({ to: '/' });
-      }
-    }, [user, navigate]);
-    
-    return <QuoteList />;
-  },
+  component: QuoteList
 });
 
 // Create and export the router
 const routeTree = rootRoute.addChildren([
-  authenticatedLayout.addChildren([
+  loginRoute,
+  protectedLayout.addChildren([
     indexRoute,
-    quotesRoute,
+    adminLayout.addChildren([
+      quotesRoute,
+    ]),
   ]),
 ]);
 

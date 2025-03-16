@@ -29,6 +29,9 @@ export function QuoteForm() {
   const [loading, setLoading] = useState<boolean>(false);
   const [confirmLoading, setConfirmLoading] = useState<boolean>(false);
 
+  // References for input fields focusing
+  const clientNameInputRef = useRef<HTMLInputElement>(null);
+
   // Ensure that currentStore exists before accessing its properties
   if (!currentStore) {
     return (
@@ -45,8 +48,6 @@ export function QuoteForm() {
   const store = currentStore;
   const requiresSaleAmount = store.requires_sale_amount;
 
-  // References for input fields focusing
-  const clientNameInputRef = useRef<HTMLInputElement>(null);
 
   const logoUrl = store.image_url || 'https://placehold.co/600x400';
 
