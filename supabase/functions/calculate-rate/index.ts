@@ -78,7 +78,7 @@ serve(async (req) => {
         );
       }
 
-    let k = 0.0016;
+    let k = 0.0012;
     if (payload.sale_amount > 120000) {
       // keep values under 120k cheap
       k = 0.0025;
