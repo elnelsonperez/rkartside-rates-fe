@@ -34,7 +34,6 @@ function QuoteForm({ store }: { store: Store }) {
 
   // References for input fields focusing
   const clientNameInputRef = useRef<HTMLInputElement>(null);
-  const saleAmountInputRef = useRef<HTMLInputElement>(null);
 
   const logoUrl = store.image_url || 'https://placehold.co/600x400';
 
@@ -100,12 +99,6 @@ function QuoteForm({ store }: { store: Store }) {
 
   const handleNumberChange = (num): void => {
     setNumberOfSpaces(num);
-    // Focus the sale amount input after selection only if it's required
-    if (requiresSaleAmount) {
-      setTimeout(() => {
-        saleAmountInputRef.current?.focus();
-      }, 0);
-    }
 
     if (savedQuote) {
       setSavedQuote(null);
@@ -233,7 +226,7 @@ function QuoteForm({ store }: { store: Store }) {
                     />
                     <label
                       htmlFor={`spaces-${num}`}
-                      className={`w-10 h-10 flex items-center justify-center rounded-md border cursor-pointer transition-colors ${
+                      className={`w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 flex items-center justify-center rounded-md border cursor-pointer transition-colors ${
                         numberOfSpaces === num
                           ? 'bg-blue-600 text-white border-blue-600'
                           : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
@@ -265,7 +258,6 @@ function QuoteForm({ store }: { store: Store }) {
                   onChange={handleSaleAmountChange}
                   placeholder="0"
                   required={requiresSaleAmount}
-                  ref={saleAmountInputRef}
                   className="w-full pl-11 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   aria-required={requiresSaleAmount ? "true" : "false"}
                 />
