@@ -77,7 +77,7 @@ serve(async (req) => {
             { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
         );
       }
-        rateAmount = (960.16 * payload.number_of_spaces + 0.066354 * payload.sale_amount + 1782.41) * rateFactor
+        rateAmount = (960.16 * (payload.number_of_spaces + (payload.sale_amount*0.01)) * payload.sale_amount + 1782.41) * rateFactor
     } else {
        rateAmount = (1400 * payload.number_of_spaces + 1882.41) * rateFactor
     }
