@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 
 export function RootLayout() {
   const { user } = useAuth();
-  
+
+
   return (
     <div className="flex flex-col min-h-screen">
       {user?.isAdmin && <Navbar />}

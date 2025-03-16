@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
   useInfiniteQuery,
+  useMutation,
+  useQueryClient,
 } from '@tanstack/react-query';
 import {
   createColumnHelper,
@@ -9,18 +11,24 @@ import {
   useReactTable,
   getSortedRowModel,
   SortingState,
+  RowSelectionState,
 } from '@tanstack/react-table';
 import { useInView } from 'react-intersection-observer';
 import { useAuth } from '../context/AuthContext';
 import { useStores } from '../hooks/useStores';
-import { supabase } from '../lib/supabase';
-import type { Quote } from '../lib/api';
+import { 
+  Quote, 
+  QuoteFilters, 
+  getQuotes, 
+  deleteQuotes 
+} from '../lib/api';
 import { LoadingSpinner } from './LoadingSpinner';
 import { format } from 'date-fns';
 
 export function QuoteList() {
   const { currentStore, user: {isAdmin} } = useAuth();
   const { stores } = useStores();
+  const queryClient = useQueryClient();
   
   // Setup for intersection observer (infinite scroll)
   const { ref, inView } = useInView();
@@ -29,12 +37,18 @@ export function QuoteList() {
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'created_at', desc: true }
   ]);
+
+  // Row selection state
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  
+  // Confirmation dialog state
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
   // State to control filters visibility
   const [showFilters, setShowFilters] = useState(false);
   
   // Filtering state
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<QuoteFilters>({
     clientName: '',
     dateFrom: '',
     dateTo: '',
@@ -44,52 +58,13 @@ export function QuoteList() {
 
   // Function to fetch quotes
   const fetchQuotes = async ({ pageParam = 0 }) => {
-    // Start building the query
-    let query = supabase
-      .from('quotes')
-      .select('*', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(pageParam, pageParam + 19); // Fetch 20 rows at a time
-
-    // Apply filters
-    if (filters.clientName) {
-      query = query.ilike('client_name', `%${filters.clientName}%`);
-    }
-
-    if (filters.dateFrom) {
-      query = query.gte('created_at', filters.dateFrom);
-    }
-
-    if (filters.dateTo) {
-      // Add one day to include the end date
-      const endDate = new Date(filters.dateTo);
-      endDate.setDate(endDate.getDate() + 1);
-      query = query.lt('created_at', endDate.toISOString());
-    }
-
-    if (filters.isConfirmed !== null) {
-      query = query.eq('is_confirmed', filters.isConfirmed);
-    }
-
-    // Filter by store unless showAllStores is true (and user is admin)
-    if (!filters.showAllStores && currentStore) {
-      query = query.eq('store_id', currentStore.id);
-    }
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      throw error;
-    }
-
-    // Check if we have more pages
-    const hasNextPage = data.length === 20;
-
-    return {
-      data,
-      nextPage: hasNextPage ? pageParam + 20 : undefined,
-      totalCount: count,
+    // Prepare filters with currentStore info
+    const apiFilters: QuoteFilters = {
+      ...filters,
+      storeId: currentStore?.id
     };
+    
+    return getQuotes(pageParam, apiFilters);
   };
 
   // Use infinite query to fetch quotes with pagination
@@ -101,10 +76,23 @@ export function QuoteList() {
     isFetchingNextPage,
     status,
   } = useInfiniteQuery({
-    queryKey: ['quotes', filters],
+    queryKey: ['quotes', filters, currentStore?.id],
     queryFn: fetchQuotes,
     getNextPageParam: (lastPage) => lastPage.nextPage,
     initialPageParam: 0,
+  });
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteQuotes,
+    onSuccess: () => {
+      // Invalidate and refetch the quotes query
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+      // Clear selection
+      setRowSelection({});
+      // Close confirmation dialog
+      setShowConfirmDialog(false);
+    },
   });
 
   // Trigger next page fetch when last item is in view
@@ -119,6 +107,17 @@ export function QuoteList() {
     if (!data) return [];
     return data.pages.flatMap((page) => page.data);
   }, [data]);
+
+  // Handle delete confirmation
+  const handleDeleteConfirm = () => {
+    const selectedIds = Object.keys(rowSelection)
+      .map(idx => quotes[parseInt(idx)]?.id)
+      .filter(Boolean) as number[];
+    
+    if (selectedIds.length > 0) {
+      deleteMutation.mutate(selectedIds);
+    }
+  };
 
   // Function to reset filters
   const resetFilters = () => {
@@ -136,20 +135,69 @@ export function QuoteList() {
   const toggleShowAllStores = () => {
     setFilters(prev => ({ ...prev, showAllStores: !prev.showAllStores }));
   };
+  
+  // Format currency for sale_amount
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
+  // Get number of selected rows
+  const selectedCount = Object.keys(rowSelection).length;
 
   // Column definitions for the table
   const columnHelper = createColumnHelper<Quote>();
   
   const columns = useMemo(() => {
-    const baseColumns = [
-      columnHelper.accessor('client_name', {
-        header: 'Nombre de Cliente',
-        cell: info => info.getValue(),
+    const selectColumn = [
+      columnHelper.display({
+        id: 'select',
+        header: ({ table }) => (
+          <div className="px-1">
+            <input
+              type="checkbox"
+              checked={table.getIsAllRowsSelected()}
+              onChange={table.getToggleAllRowsSelectedHandler()}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+          </div>
+        ),
+        cell: ({ row }) => (
+          <div className="px-1">
+            <input
+              type="checkbox"
+              checked={row.getIsSelected()}
+              onChange={row.getToggleSelectedHandler()}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+          </div>
+        ),
       }),
+    ];
+
+    const dataColumns = [
       columnHelper.accessor('created_at', {
         header: 'Fecha',
-        cell: info => format(new Date(info.getValue()), 'dd/MM/yyyy HH:mm'),
+        cell: info => format(new Date(info.getValue()), 'dd/MM/yyyy hh:mma'),
         sortingFn: 'datetime',
+      }),
+      columnHelper.accessor('client_name', {
+        header: 'Nombre',
+        cell: info => info.getValue(),
+      }),
+      columnHelper.accessor('sale_amount', {
+        header: 'Monto',
+        cell: info => formatCurrency(info.getValue()),
+        sortingFn: 'basic',
+      }),
+      columnHelper.accessor('number_of_spaces', {
+        header: 'Espacios',
+        cell: info => info.getValue(),
+        sortingFn: 'basic',
       }),
       columnHelper.accessor('is_confirmed', {
         header: 'Confirmado',
@@ -168,7 +216,7 @@ export function QuoteList() {
     // Add store column if showing all stores
     if (filters.showAllStores) {
       return [
-        ...baseColumns,
+        ...selectColumn,
         columnHelper.accessor('store_id', {
           header: 'Tienda',
           cell: info => {
@@ -177,10 +225,11 @@ export function QuoteList() {
             return storeName;
           },
         }),
+        ...dataColumns,
       ];
     }
     
-    return baseColumns;
+    return [...selectColumn, ...dataColumns];
   }, [columnHelper, filters.showAllStores, stores]);
 
   // Initialize the table
@@ -189,7 +238,10 @@ export function QuoteList() {
     columns,
     state: {
       sorting,
+      rowSelection,
     },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -218,7 +270,20 @@ export function QuoteList() {
     <div className="container mx-auto p-4">
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <h1 className="text-2xl font-bold">Cotizaciones</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-bold">Cotizaciones</h1>
+            {selectedCount > 0 && (
+              <button
+                onClick={() => setShowConfirmDialog(true)}
+                className="bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Eliminar ({selectedCount})
+              </button>
+            )}
+          </div>
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => setShowFilters(!showFilters)}
@@ -248,7 +313,7 @@ export function QuoteList() {
                 type="checkbox"
                 id="isConfirmed"
                 checked={filters.isConfirmed}
-                onChange={(e) => setFilters(prev => ({ ...prev, isConfirmed: e.target.checked }))}
+                onChange={(e) => setFilters(prev => ({ ...prev, isConfirmed: e.target.checked ? true : null }))}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="isConfirmed" className="ml-2 text-sm text-gray-700">
@@ -357,20 +422,22 @@ export function QuoteList() {
                     {headerGroup.headers.map(header => (
                       <th 
                         key={header.id}
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={header.column.getToggleSortingHandler()}
+                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${header.id !== 'select' ? 'cursor-pointer' : ''}`}
+                        onClick={header.id !== 'select' ? header.column.getToggleSortingHandler() : undefined}
                       >
                         <div className="flex items-center">
                           {flexRender(
                             header.column.columnDef.header,
                             header.getContext()
                           )}
-                          <span className="ml-1">
-                            {{
-                              asc: ' 🔼',
-                              desc: ' 🔽',
-                            }[header.column.getIsSorted() as string] ?? null}
-                          </span>
+                          {header.id !== 'select' && (
+                            <span className="ml-1">
+                              {{
+                                asc: ' 🔼',
+                                desc: ' 🔽',
+                              }[header.column.getIsSorted() as string] ?? null}
+                            </span>
+                          )}
                         </div>
                       </th>
                     ))}
@@ -385,7 +452,7 @@ export function QuoteList() {
                   return (
                     <tr 
                       key={row.id} 
-                      className="hover:bg-gray-50"
+                      className={`hover:bg-gray-50 ${row.getIsSelected() ? 'bg-blue-50' : ''}`}
                       ref={isLastItem ? ref : undefined}
                     >
                       {row.getVisibleCells().map(cell => (
@@ -410,6 +477,33 @@ export function QuoteList() {
         {(isFetchingNextPage || (isFetching && !isFetchingNextPage)) && (
           <div className="py-4 text-center">
             <LoadingSpinner />
+          </div>
+        )}
+
+        {/* Confirmation Dialog */}
+        {showConfirmDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Confirmar eliminación</h3>
+              <p className="text-gray-600 mb-6">
+                ¿Está seguro que desea eliminar {selectedCount} {selectedCount === 1 ? 'cotización' : 'cotizaciones'}? Esta acción no se puede deshacer.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowConfirmDialog(false)}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-sm font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={deleteMutation.isPending}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -7,6 +7,23 @@ export type InsertQuote = Database['public']['Tables']['quotes']['Insert'];
 export type UpdateQuote = Database['public']['Tables']['quotes']['Update'];
 export type UserMetadata = Database['public']['Tables']['user_metadata']['Row'];
 
+// Type for quote list filter parameters
+export interface QuoteFilters {
+  clientName?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  isConfirmed?: boolean | null;
+  storeId?: string;
+  showAllStores?: boolean;
+}
+
+// Type for paginated response
+export interface PaginatedResponse<T> {
+  data: T[];
+  nextPage?: number;
+  totalCount?: number;
+}
+
 /**
  * Fetch a single store by user ID
  * Since there's only one store per user, we use single() to get just that store
@@ -128,4 +145,76 @@ export async function calculateRate(
   }
 
   return data.rate_amount;
+}
+
+/**
+ * Fetch quotes with pagination and filtering
+ */
+export async function getQuotes(
+  pageParam = 0,
+  filters: QuoteFilters,
+  pageSize = 20
+): Promise<PaginatedResponse<Quote>> {
+  // Start building the query
+  let query = supabase
+    .from('quotes')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(pageParam, pageParam + pageSize - 1);
+
+  // Apply filters
+  if (filters.clientName) {
+    query = query.ilike('client_name', `%${filters.clientName}%`);
+  }
+
+  if (filters.dateFrom) {
+    query = query.gte('created_at', filters.dateFrom);
+  }
+
+  if (filters.dateTo) {
+    // Add one day to include the end date
+    const endDate = new Date(filters.dateTo);
+    endDate.setDate(endDate.getDate() + 1);
+    query = query.lt('created_at', endDate.toISOString());
+  }
+
+  if (filters.isConfirmed !== undefined && filters.isConfirmed !== null) {
+    query = query.eq('is_confirmed', filters.isConfirmed);
+  }
+
+  // Filter by store unless showAllStores is true
+  if (!filters.showAllStores && filters.storeId) {
+    query = query.eq('store_id', filters.storeId);
+  }
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    console.error('Error fetching quotes:', error);
+    throw error;
+  }
+
+  // Check if we have more pages
+  const hasNextPage = data.length === pageSize;
+
+  return {
+    data: data || [],
+    nextPage: hasNextPage ? pageParam + pageSize : undefined,
+    totalCount: count,
+  };
+}
+
+/**
+ * Delete multiple quotes by their IDs
+ */
+export async function deleteQuotes(ids: number[]): Promise<void> {
+  const { error } = await supabase
+    .from('quotes')
+    .delete()
+    .in('id', ids);
+  
+  if (error) {
+    console.error('Error deleting quotes:', error);
+    throw error;
+  }
 }

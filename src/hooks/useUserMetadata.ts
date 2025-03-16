@@ -7,7 +7,7 @@ export function useUserMetadata() {
   const userId = user?.id;
 
   return useQuery({
-    queryKey: ['user-metadata', userId],
+    queryKey: ['user-metadata', user],
     queryFn: async () => getUserMetadata(userId!),
     enabled: !!userId,
   });
