@@ -149,18 +149,27 @@ export async function calculateRate(
 
 /**
  * Fetch quotes with pagination and filtering
+ * For React Query's infinite scrolling with proper page-based pagination
+ * 
+ * @param pageParam The page number (0-based, used to calculate the starting offset)
+ * @param filters Filtering criteria for the quotes
+ * @param pageSize Number of items per page
  */
 export async function getQuotes(
   pageParam = 0,
   filters: QuoteFilters,
-  pageSize = 20
+  pageSize = 10
 ): Promise<PaginatedResponse<Quote>> {
+  // Calculate the starting index based on page number
+  const startRange = pageParam * pageSize;
+  const endRange = startRange + pageSize - 1;
+  
   // Start building the query
   let query = supabase
     .from('quotes')
     .select('*', { count: 'exact' })
     .order('created_at', { ascending: false })
-    .range(pageParam, pageParam + pageSize - 1);
+    .range(startRange, endRange);
 
   // Apply filters
   if (filters.clientName) {
@@ -194,12 +203,14 @@ export async function getQuotes(
     throw error;
   }
 
-  // Check if we have more pages
-  const hasNextPage = data.length === pageSize;
+  // Check if we have more pages by seeing if we got a full page of results
+  // and if there are more total items beyond what we've fetched so far
+  const totalFetched = (pageParam + 1) * pageSize;
+  const hasMorePages = data.length === pageSize && count !== null && totalFetched < count;
 
   return {
     data: data || [],
-    nextPage: hasNextPage ? pageParam + pageSize : undefined,
+    nextPage: hasMorePages ? pageParam + 1 : undefined,
     totalCount: count || 0,
   };
 }
@@ -215,6 +226,21 @@ export async function deleteQuotes(ids: number[]): Promise<void> {
   
   if (error) {
     console.error('Error deleting quotes:', error);
+    throw error;
+  }
+}
+
+/**
+ * Update the status of multiple quotes
+ */
+export async function updateQuotesStatus(ids: number[], status: string): Promise<void> {
+  const { error } = await supabase
+    .from('quotes')
+    .update({ status })
+    .in('id', ids);
+  
+  if (error) {
+    console.error('Error updating quotes status:', error);
     throw error;
   }
 }

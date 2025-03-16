@@ -20,7 +20,8 @@ import {
   Quote, 
   QuoteFilters, 
   getQuotes, 
-  deleteQuotes 
+  deleteQuotes,
+  updateQuotesStatus
 } from '../lib/api';
 import { LoadingSpinner } from './LoadingSpinner';
 import { format } from 'date-fns';
@@ -44,6 +45,10 @@ export function QuoteList() {
   
   // Confirmation dialog state
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  
+  // Status update dialog state
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
   
   // State to control filters visibility
   const [showFilters, setShowFilters] = useState(false);
@@ -95,6 +100,22 @@ export function QuoteList() {
       setShowConfirmDialog(false);
     },
   });
+  
+  // Status update mutation
+  const statusMutation = useMutation({
+    mutationFn: ({ ids, status }: { ids: number[], status: string }) => 
+      updateQuotesStatus(ids, status),
+    onSuccess: () => {
+      // Invalidate and refetch the quotes query
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+      // Clear selection
+      setRowSelection({});
+      // Close status dialog
+      setShowStatusDialog(false);
+      // Reset selected status
+      setSelectedStatus('');
+    },
+  });
 
   // Trigger next page fetch when last item is in view
   useEffect(() => {
@@ -117,6 +138,17 @@ export function QuoteList() {
     
     if (selectedIds.length > 0) {
       deleteMutation.mutate(selectedIds);
+    }
+  };
+  
+  // Handle status update confirmation
+  const handleStatusUpdate = () => {
+    const selectedIds = Object.keys(rowSelection)
+      .map(idx => quotes[parseInt(idx)]?.id)
+      .filter(Boolean) as number[];
+    
+    if (selectedIds.length > 0 && selectedStatus) {
+      statusMutation.mutate({ ids: selectedIds, status: selectedStatus });
     }
   };
 
@@ -145,6 +177,41 @@ export function QuoteList() {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2
     }).format(amount);
+  };
+  
+  // Status configuration
+  const statusConfig = {
+    pending: { 
+      label: 'PENDIENTE', 
+      bg: 'bg-gray-100', 
+      text: 'text-gray-800' 
+    },
+    in_progress: { 
+      label: 'EN PROCESO', 
+      bg: 'bg-yellow-100', 
+      text: 'text-yellow-800' 
+    },
+    ignored: { 
+      label: 'IGNORADO', 
+      bg: 'bg-red-100', 
+      text: 'text-red-800' 
+    },
+    completed: { 
+      label: 'COMPLETADO', 
+      bg: 'bg-green-100', 
+      text: 'text-green-800' 
+    }
+  };
+  
+  // Get status badge based on status
+  const getStatusBadge = (status: string | null) => {
+    const config = status ? statusConfig[status as keyof typeof statusConfig] : statusConfig.pending;
+    
+    return (
+      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${config.bg} ${config.text}`}>
+        {config.label}
+      </span>
+    );
   };
 
   // Get number of selected rows
@@ -212,6 +279,10 @@ export function QuoteList() {
           </span>
         ),
       }),
+      columnHelper.accessor('status', {
+        header: 'Estado',
+        cell: info => getStatusBadge(info.getValue()),
+      }),
     ];
     
     // Add store column if showing all stores
@@ -270,56 +341,86 @@ export function QuoteList() {
   return (
     <div className="container mx-auto p-4">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold">Cotizaciones</h1>
+        {/* Redesigned header for better mobile experience */}
+        <div className="flex flex-col gap-4 mb-6">
+          {/* Hidden on mobile when items are selected */}
+          <h1 className={`text-2xl font-bold `}>Cotizaciones</h1>
+          
+          {/* Main actions row - always visible */}
+          <div className="flex flex-wrap justify-between gap-2">
+            {/* Selection actions - shows when items are selected */}
             {selectedCount > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mr-2">
+                <span className="text-sm font-medium text-gray-600">
+                  {selectedCount} {selectedCount === 1 ? 'seleccionada' : 'seleccionadas'}
+                </span>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => setShowStatusDialog(true)}
+                    title="Cambiar estado"
+                    className="bg-blue-100 hover:bg-blue-200 text-blue-800 p-2 sm:px-3 sm:py-1 rounded-md text-sm font-medium transition-colors flex items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                    </svg>
+                    <span className="hidden sm:inline">Cambiar estado</span>
+                  </button>
+                  <button
+                    onClick={() => setShowConfirmDialog(true)}
+                    title="Eliminar"
+                    className="bg-red-100 hover:bg-red-200 text-red-800 p-2 sm:px-3 sm:py-1 rounded-md text-sm font-medium transition-colors flex items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span className="hidden sm:inline">Eliminar</span>
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Filter actions - always visible */}
+            <div className="flex flex-wrap gap-1 ml-auto">
               <button
-                onClick={() => setShowConfirmDialog(true)}
-                className="bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center"
+                onClick={() => setShowFilters(!showFilters)}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-800 p-2 sm:px-3 sm:py-1 rounded-md text-sm font-medium transition-colors flex items-center"
+                title={showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
-                Eliminar ({selectedCount})
+                <span className="hidden sm:inline">{showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}</span>
               </button>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-1 rounded-md text-sm font-medium transition-colors flex items-center"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-              </svg>
-              {showFilters ? 'Ocultar filtros' : 'Mostrar filtros'}
-            </button>
-            
-            {isAdmin && (
-              <button
-                onClick={toggleShowAllStores}
-                className={`px-3 py-1 rounded-md text-sm font-medium ${
-                  filters.showAllStores 
-                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                    : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                } transition-colors`}
-              >
-                {filters.showAllStores ? 'Ver tienda actual' : 'Ver todas las tiendas'}
-              </button>
-            )}
-            
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isConfirmed"
-                checked={!!filters.isConfirmed}
-                onChange={(e) => setFilters(prev => ({ ...prev, isConfirmed: e.target.checked ? true : null }))}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="isConfirmed" className="ml-2 text-sm text-gray-700">
-                Solo confirmadas
-              </label>
+              
+              {isAdmin && (
+                <button
+                  onClick={toggleShowAllStores}
+                  title={filters.showAllStores ? 'Ver tienda actual' : 'Ver todas las tiendas'}
+                  className={`p-2 sm:px-3 sm:py-1 rounded-md text-sm font-medium transition-colors flex items-center ${
+                    filters.showAllStores 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                      : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 sm:mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                  </svg>
+                  <span className="hidden sm:inline">{filters.showAllStores ? 'Ver tienda actual' : 'Ver todas'}</span>
+                </button>
+              )}
+              
+              <div className="flex items-center bg-gray-100 p-1 px-2 rounded-md">
+                <input
+                  type="checkbox"
+                  id="isConfirmed"
+                  checked={!!filters.isConfirmed}
+                  onChange={(e) => setFilters(prev => ({ ...prev, isConfirmed: e.target.checked ? true : null }))}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isConfirmed" className="ml-2 text-xs sm:text-sm text-gray-700">
+                  Confirmadas
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -453,8 +554,9 @@ export function QuoteList() {
                   return (
                     <tr 
                       key={row.id} 
-                      className={`hover:bg-gray-50 ${row.getIsSelected() ? 'bg-blue-50' : ''}`}
+                      className={`hover:bg-gray-50 ${row.getIsSelected() ? 'bg-blue-50' : ''} cursor-pointer`}
                       ref={isLastItem ? ref : undefined}
+                      onClick={() => row.toggleSelected(!row.getIsSelected())}
                     >
                       {row.getVisibleCells().map(cell => (
                         <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
@@ -502,6 +604,79 @@ export function QuoteList() {
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
                 >
                   {deleteMutation.isPending ? 'Eliminando...' : 'Eliminar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Status Change Dialog */}
+        {showStatusDialog && (
+          <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-md mx-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Cambiar estado</h3>
+              <p className="text-gray-600 mb-4">
+                Seleccione el nuevo estado para {selectedCount} {selectedCount === 1 ? 'cotización' : 'cotizaciones'}.
+              </p>
+              
+              <div className="grid grid-cols-1 gap-3 mb-6">
+                <button
+                  onClick={() => setSelectedStatus('pending')}
+                  className={`flex justify-between items-center p-3 border rounded-md hover:bg-gray-50 ${
+                    selectedStatus === 'pending' ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                  }`}
+                >
+                  <span className="font-medium">Pendiente</span>
+                  {getStatusBadge('pending')}
+                </button>
+                
+                <button
+                  onClick={() => setSelectedStatus('in_progress')}
+                  className={`flex justify-between items-center p-3 border rounded-md hover:bg-gray-50 ${
+                    selectedStatus === 'in_progress' ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                  }`}
+                >
+                  <span className="font-medium">En proceso</span>
+                  {getStatusBadge('in_progress')}
+                </button>
+                
+                <button
+                  onClick={() => setSelectedStatus('ignored')}
+                  className={`flex justify-between items-center p-3 border rounded-md hover:bg-gray-50 ${
+                    selectedStatus === 'ignored' ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                  }`}
+                >
+                  <span className="font-medium">Ignorado</span>
+                  {getStatusBadge('ignored')}
+                </button>
+                
+                <button
+                  onClick={() => setSelectedStatus('completed')}
+                  className={`flex justify-between items-center p-3 border rounded-md hover:bg-gray-50 ${
+                    selectedStatus === 'completed' ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                  }`}
+                >
+                  <span className="font-medium">Completado</span>
+                  {getStatusBadge('completed')}
+                </button>
+              </div>
+              
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowStatusDialog(false);
+                    setSelectedStatus('');
+                  }}
+                  className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md text-sm font-medium transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleStatusUpdate}
+                  disabled={!selectedStatus || statusMutation.isPending}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+                >
+                  {statusMutation.isPending ? 'Actualizando...' : 'Actualizar estado'}
                 </button>
               </div>
             </div>

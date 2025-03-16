@@ -19,6 +19,7 @@ export type Database = {
           number_of_spaces: number
           rate_amount: number | null
           sale_amount: number
+          status: string | null
           store_id: string
         }
         Insert: {
@@ -30,6 +31,7 @@ export type Database = {
           number_of_spaces: number
           rate_amount?: number | null
           sale_amount: number
+          status?: string | null
           store_id: string
         }
         Update: {
@@ -41,6 +43,7 @@ export type Database = {
           number_of_spaces?: number
           rate_amount?: number | null
           sale_amount?: number
+          status?: string | null
           store_id?: string
         }
         Relationships: [
