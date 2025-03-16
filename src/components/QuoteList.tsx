@@ -544,7 +544,7 @@ export function QuoteList() {
 
         {/* Loading state */}
         {status === 'pending' && (
-          <div className="flex justify-center items-center h-64">
+          <div className="flex justify-center items-center h-12">
             <LoadingSpinner />
           </div>
         )}
