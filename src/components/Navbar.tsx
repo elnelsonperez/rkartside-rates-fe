@@ -44,7 +44,7 @@ export function Navbar() {
         {/* Desktop View */}
         <div className="hidden md:flex justify-between items-center">
           <div className="flex items-center space-x-6">
-            <span className="font-bold text-lg">Admin Dashboard</span>
+            <span className="font-bold text-lg">RKArtSide</span>
             
             {/* Navigation Links */}
             <nav className="flex items-center space-x-4">
@@ -54,7 +54,7 @@ export function Navbar() {
                 inactiveProps={{ className: "text-gray-300 hover:text-white" }}
                 className="transition duration-150 ease-in-out"
               >
-                Inicio
+                Cotizar
               </Link>
               <Link
                 to="/quotes"
@@ -161,7 +161,7 @@ export function Navbar() {
                 onClick={() => setMobileMenuOpen(false)}
                 className="block px-3 py-2 rounded hover:bg-gray-700 transition"
               >
-                Inicio
+                Cotizar
               </Link>
               <Link
                 to="/quotes"
