@@ -34,7 +34,7 @@ export function UserProvider({ children }: UserProviderProps) {
   useEffect(() => {
     if (metadataQuery.data) {
       const { is_admin: isAdmin } = metadataQuery.data;
-      updateUserIsAdmin(isAdmin);
+      updateUserIsAdmin(!!isAdmin);
     }
   }, [metadataQuery.data]);
 
