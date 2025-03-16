@@ -32,10 +32,10 @@ export function UserProvider({ children }: UserProviderProps) {
 
 
   useEffect(() => {
-    if (metadataQuery.data) {
-      const { is_admin: isAdmin } = metadataQuery.data;
-      updateUserIsAdmin(!!isAdmin);
+    if (metadataQuery.data !== undefined) {
+      updateUserIsAdmin(!!metadataQuery.data?.is_admin);
     }
+
   }, [metadataQuery.data]);
 
   // Track if we're waiting for initial data
