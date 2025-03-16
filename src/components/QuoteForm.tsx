@@ -30,18 +30,6 @@ export function QuoteForm() {
   const [loading, setLoading] = useState<boolean>(false);
   const [confirmLoading, setConfirmLoading] = useState<boolean>(false);
   
-  // Early return if no store is selected
-  if (!store) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">No store selected</h2>
-          <p className="text-gray-600">Please select a store from the navigation menu</p>
-        </div>
-      </div>
-    );
-  }
-  
   const requiresSaleAmount = store.requires_sale_amount;
 
   // References for input fields focusing

@@ -8,26 +8,41 @@ import { QuoteForm } from './components/QuoteForm';
 import { QuoteList } from './components/QuoteList';
 import { RootLayout } from './components/RootLayout';
 import { Login } from './components/Login';
-import App from './App';
+import { LoadingSpinner } from './components/LoadingSpinner';
+import { useAuth } from './context/AuthContext';
 
-// Create the root route with auth checking
+// Create the root route
 const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <App />
-      <Outlet />
-    </>
-  ),
+  component: () => <Outlet />,
 });
 
 // Create authenticated layout route
 const authenticatedLayout = createRoute({
   getParentRoute: () => rootRoute,
   id: 'authenticated',
-  component: RootLayout,
+  component: () => {
+    const { user, loading } = useAuth();
+    
+    // Show loading spinner while checking auth
+    if (loading) {
+      return <LoadingSpinner />;
+    }
+    
+    // If no user, return Login component
+    if (!user) {
+      return <Login />;
+    }
+    
+    // If authenticated, render the layout with outlet
+    return <RootLayout />;
+  },
   beforeLoad: async () => {
-    // When implementing proper auth check, this would validate the user is logged in
-    // For now we just render the App component which handles auth
+    // We could also do server-side auth checking here if needed
+    // For example, check if a token is valid via API
+    // For now, this is handled in the component itself
+
+    // Alternatively, we could use router.navigate to redirect
+    // if no auth, but we choose to render Login in the component
   },
 });
 
@@ -45,20 +60,12 @@ const quotesRoute = createRoute({
   component: QuoteList,
 });
 
-// Create the login route
-const loginRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/login',
-  component: Login,
-});
-
 // Create and export the router
 const routeTree = rootRoute.addChildren([
   authenticatedLayout.addChildren([
     indexRoute,
     quotesRoute,
   ]),
-  loginRoute,
 ]);
 
 export const router = createRouter({ routeTree });

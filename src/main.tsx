@@ -17,21 +17,16 @@ const queryClient = new QueryClient({
   },
 });
 
-// Enable the router
-const enableRouter = () => {
-  // Register your router instance for type safety
-  router.subscribe('onBeforeLoad', () => {
-    console.info('Router before load');
-  });
-};
-
-// Call enableRouter immediately
-enableRouter();
+// Initialize router
+router.subscribe('onBeforeLoad', () => {
+  console.info('Router loading started');
+});
 
 // Type assertion for document.getElementById
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('Failed to find the root element');
 
+// Render the app
 createRoot(rootElement).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

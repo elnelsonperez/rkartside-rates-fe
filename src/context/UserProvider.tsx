@@ -2,6 +2,7 @@ import { ReactNode, useEffect } from 'react';
 import { useUserMetadata } from '../hooks/useUserMetadata';
 import { useStores } from '../hooks/useStores';
 import { useAuth } from './AuthContext';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 
 interface UserProviderProps {
   children: ReactNode;
@@ -19,19 +20,34 @@ export function UserProvider({ children }: UserProviderProps) {
   // Set the current store if we have stores and no current store
   useEffect(() => {
     if (stores.length > 0 && !currentStore) {
+      console.log(
+        `Auto-selecting store: "${stores[0].name}" (ID: ${stores[0].id}) ` +
+        `for ${user?.isAdmin ? 'admin' : 'regular'} user`
+      );
       // Select the first store
       setCurrentStore(stores[0]);
     }
-  }, [stores, currentStore, setCurrentStore]);
+  }, [stores, currentStore, setCurrentStore, user?.isAdmin]);
+  
+  // Track if we're waiting for initial data
+  const isLoadingUserData = loading || metadataQuery.isLoading || metadataQuery.isFetching;
+  const isLoadingStoreData = user && !metadataQuery.isError && isLoadingStores;
+  const needsStoreSelection = user?.isAdmin && stores.length > 0 && !currentStore;
+  
+  const isInitializing = isLoadingUserData || isLoadingStoreData || needsStoreSelection;
   
   // Show loading if we're loading user, metadata, or stores
-  if (loading || metadataQuery.isLoading || metadataQuery.isFetching || 
-      (user && !metadataQuery.isError && isLoadingStores)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
+  if (isInitializing) {
+    // Add debug logs to help diagnose any issues
+    if (process.env.NODE_ENV !== 'production') {
+      const reason = isLoadingUserData 
+        ? 'Loading user data' 
+        : isLoadingStoreData 
+          ? 'Loading store data' 
+          : 'Waiting for store selection';
+      console.log(`UserProvider is showing loading spinner: ${reason}`);
+    }
+    return <LoadingSpinner />;
   }
   
   return <>{children}</>;
