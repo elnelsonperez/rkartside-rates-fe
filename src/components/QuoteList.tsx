@@ -257,6 +257,22 @@ export function QuoteList() {
         header: 'Nombre',
         cell: info => info.getValue(),
       }),
+      columnHelper.accessor('status', {
+        header: 'Estado',
+        cell: info => getStatusBadge(info.getValue()),
+      }),
+      columnHelper.accessor('is_confirmed', {
+        header: 'Confirmado',
+        cell: info => info.getValue() ? (
+            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+            Sí
+          </span>
+        ) : (
+            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+            No
+          </span>
+        ),
+      }),
       columnHelper.accessor('sale_amount', {
         header: 'Monto',
         cell: info => formatCurrency(info.getValue()),
@@ -267,22 +283,8 @@ export function QuoteList() {
         cell: info => info.getValue(),
         sortingFn: 'basic',
       }),
-      columnHelper.accessor('is_confirmed', {
-        header: 'Confirmado',
-        cell: info => info.getValue() ? (
-          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-            Sí
-          </span>
-        ) : (
-          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-            No
-          </span>
-        ),
-      }),
-      columnHelper.accessor('status', {
-        header: 'Estado',
-        cell: info => getStatusBadge(info.getValue()),
-      }),
+
+
     ];
     
     // Add store column if showing all stores
@@ -514,7 +516,7 @@ export function QuoteList() {
                     {headerGroup.headers.map(header => (
                       <th 
                         key={header.id}
-                        className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${header.id !== 'select' ? 'cursor-pointer' : ''}`}
+                        className={`px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${header.id !== 'select' ? 'cursor-pointer' : ''}`}
                         onClick={header.id !== 'select' ? header.column.getToggleSortingHandler() : undefined}
                       >
                         <div className="flex items-center">
@@ -549,7 +551,7 @@ export function QuoteList() {
                       onClick={() => row.toggleSelected(!row.getIsSelected())}
                     >
                       {row.getVisibleCells().map(cell => (
-                        <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
+                        <td key={cell.id} className="px-2 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900">
                             {flexRender(
                               cell.column.columnDef.cell,
