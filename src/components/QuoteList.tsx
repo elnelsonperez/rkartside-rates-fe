@@ -34,11 +34,23 @@ export function QuoteList() {
   
   // Setup for intersection observer (infinite scroll)
   const { ref, inView } = useInView();
-  
+
   // Sorting state for the table
   const [sorting, setSorting] = useState<SortingState>([
     { id: 'created_at', desc: true }
   ]);
+
+  // Create a derived effect to update filters when sorting changes
+  useEffect(() => {
+    if (sorting.length > 0) {
+      const { id, desc } = sorting[0];
+      setFilters(prev => ({
+        ...prev,
+        sortBy: id,
+        sortDesc: desc
+      }));
+    }
+  }, [sorting]);
 
   // Row selection state
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -60,6 +72,8 @@ export function QuoteList() {
     dateTo: '',
     isConfirmed: true,
     showAllStores: false,
+    sortBy: 'created_at',
+    sortDesc: true,
   });
 
   // Function to fetch quotes
@@ -154,12 +168,17 @@ export function QuoteList() {
 
   // Function to reset filters
   const resetFilters = () => {
+    // Preserve sorting when resetting other filters
+    const { sortBy, sortDesc } = filters;
+    
     setFilters({
       clientName: '',
       dateFrom: '',
       dateTo: '',
       isConfirmed: true,
       showAllStores: false,
+      sortBy,
+      sortDesc,
     });
     setShowFilters(false);
   };

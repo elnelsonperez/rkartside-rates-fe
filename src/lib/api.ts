@@ -15,6 +15,8 @@ export interface QuoteFilters {
   isConfirmed?: boolean | null;
   storeId?: string;
   showAllStores?: boolean;
+  sortBy?: string;
+  sortDesc?: boolean;
 }
 
 // Type for paginated response
@@ -167,9 +169,17 @@ export async function getQuotes(
   // Start building the query
   let query = supabase
     .from('quotes')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(startRange, endRange);
+    .select('*', { count: 'exact' });
+    
+  // Apply sorting if provided, otherwise default to created_at desc
+  if (filters.sortBy) {
+    query = query.order(filters.sortBy, { ascending: !filters.sortDesc });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
+  
+  // Apply pagination
+  query = query.range(startRange, endRange);
 
   // Apply filters
   if (filters.clientName) {
