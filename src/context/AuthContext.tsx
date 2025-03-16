@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { User } from '../types';
-import { Store, getStoreByUserId } from '../lib/api';
+import { Store } from '../lib/api';
 
 interface AuthContextType {
   user: User | null;
-  store: Store | null;
   loading: boolean;
+  currentStore: Store | null;
+  setCurrentStore: (store: Store) => void;
+  updateUserIsAdmin: (isAdmin: boolean) => void;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -15,27 +17,18 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [store, setStore] = useState<Store | null>(null);
+  const [currentStore, setCurrentStore] = useState<Store | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch store when user changes
-  useEffect(() => {
-    const fetchUserStore = async () => {
-      if (user) {
-        try {
-          const userStore = await getStoreByUserId(user.id);
-          setStore(userStore);
-        } catch (error) {
-          console.error('Error fetching user store:', error);
-          setStore(null);
-        }
-      } else {
-        setStore(null);
-      }
-    };
-
-    fetchUserStore();
-  }, [user]);
+  // Update user's admin status without creating a new user object
+  const updateUserIsAdmin = (isAdmin: boolean) => {
+    if (user && user.isAdmin !== isAdmin) {
+      setUser(prevUser => ({
+        ...prevUser!,
+        isAdmin
+      }));
+    }
+  };
 
   useEffect(() => {
     // Check for active session on mount
@@ -78,6 +71,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
       } else {
         setUser(null);
+        // Clear store when user logs out
+        setCurrentStore(null);
       }
       setLoading(false);
     });
@@ -107,8 +102,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const value = {
     user,
-    store,
     loading,
+    currentStore,
+    setCurrentStore,
+    updateUserIsAdmin,
     signIn,
     signOut,
   };

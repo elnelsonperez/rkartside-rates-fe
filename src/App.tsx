@@ -1,6 +1,7 @@
 import { useState, useRef, FormEvent, ChangeEvent } from 'react';
 import { useAuth } from './context/AuthContext';
 import { Login } from './components/Login';
+import { Navbar } from './components/Navbar';
 import { 
   Store, 
   createQuote, 
@@ -28,7 +29,7 @@ function QuoteForm({ store }: { store: Store }) {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [confirmLoading, setConfirmLoading] = useState<boolean>(false);
-  const { signOut, user } = useAuth();
+  const { user, signOut } = useAuth();
   const requiresSaleAmount = store.requires_sale_amount
 
 
@@ -128,13 +129,7 @@ function QuoteForm({ store }: { store: Store }) {
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (err) {
-      console.error('Error signing out:', err);
-    }
-  };
+  // Removed handleSignOut function as it's now in the Navbar
 
   const handleConfirmQuote = async () => {
     if (!savedQuote) return;
@@ -175,12 +170,15 @@ function QuoteForm({ store }: { store: Store }) {
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
         <div className="flex justify-between items-center mb-6">
           <img src={logoUrl} alt="Logo" className="h-16 object-contain" />
-          <div className="flex flex-col items-end">
-            {user?.email && <span className="text-sm text-gray-600 mb-1">{user.email}</span>}
-            <button onClick={handleSignOut} className="text-sm text-blue-600 hover:text-blue-800">
-              Cerrar Sesión
-            </button>
-          </div>
+          {/* Show email and sign out link for non-admin users (admins see these in the navbar) */}
+          {(!user.isAdmin) && (
+            <div className="flex flex-col items-end">
+              {user?.email && <span className="text-sm text-gray-600 mb-1">{user.email}</span>}
+              <button onClick={() => signOut()} className="text-sm text-blue-600 hover:text-blue-800">
+                Cerrar Sesión
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="text-center  mb-6 ">
@@ -328,9 +326,10 @@ function QuoteForm({ store }: { store: Store }) {
 }
 
 function App() {
-  const {user, loading, store} = useAuth();
-
-  if (loading || (user && !store)) {
+  const { user, loading, currentStore } = useAuth();
+  
+  // Show loading spinner while user data is being loaded
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -338,7 +337,17 @@ function App() {
     );
   }
 
-  return user && store ? <QuoteForm store={store} /> : <Login />;
+  // Show login screen if no user
+  if (!user) {
+    return <Login />;
+  }
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <Navbar />
+      {currentStore && <QuoteForm store={currentStore} />}
+    </div>
+  );
 }
 
 export default App;

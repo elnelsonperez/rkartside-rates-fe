@@ -5,6 +5,7 @@ export type Store = Database['public']['Tables']['stores']['Row'];
 export type Quote = Database['public']['Tables']['quotes']['Row'];
 export type InsertQuote = Database['public']['Tables']['quotes']['Insert'];
 export type UpdateQuote = Database['public']['Tables']['quotes']['Update'];
+export type UserMetadata = Database['public']['Tables']['user_metadata']['Row'];
 
 /**
  * Fetch a single store by user ID
@@ -20,6 +21,40 @@ export async function getStoreByUserId(userId: string): Promise<Store | null> {
       return null;
     }
     console.error(`Error fetching store for user ${userId}:`, error);
+    throw error;
+  }
+
+  return data;
+}
+
+/**
+ * Fetch all stores from the database
+ * For admin users only
+ */
+export async function getAllStores(): Promise<Store[]> {
+  const { data, error } = await supabase.from('stores').select('*').order('name');
+
+  if (error) {
+    console.error('Error fetching all stores:', error);
+    throw error;
+  }
+
+  return data || [];
+}
+
+/**
+ * Fetch user metadata to check if user is an admin
+ */
+export async function getUserMetadata(userId: string): Promise<UserMetadata | null> {
+  const { data, error } = await supabase.from('user_metadata').select('*').eq('user_id', userId).single();
+
+  if (error) {
+    // If no metadata is found, don't throw an error, just return null
+    if (error.code === 'PGRST116') {
+      console.log(`No metadata found for user ${userId}`);
+      return null;
+    }
+    console.error(`Error fetching metadata for user ${userId}:`, error);
     throw error;
   }
 

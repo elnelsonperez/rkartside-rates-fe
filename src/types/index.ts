@@ -1,18 +1,8 @@
-export interface QuoteRequest {
-  store_id: string;
-  client_name: string;
-  number_of_spaces: number;
-  sale_amount: number;
-}
-
-export interface QuoteResponse {
-  rate: number;
-}
-
 export interface User {
   id: string;
   email?: string;
   created_at?: string;
+  isAdmin?: boolean;
 }
 
 // Just export the types we need
