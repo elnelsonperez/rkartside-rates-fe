@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   createColumnHelper,
@@ -112,6 +112,22 @@ export function QuoteList() {
       setSelectedStatus('');
     },
   });
+  
+  // Single quote status update mutation
+  const singleStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) => {
+      console.log(`Mutation called for quote ${id} to status ${status}`);
+      return updateQuotesStatus([id], status);
+    },
+    onSuccess: () => {
+      // Just invalidate and refetch the quotes query
+      console.log("Status update successful, invalidating queries");
+      queryClient.invalidateQueries({ queryKey: ['quotes'] });
+    },
+    onError: (error) => {
+      console.error("Status update failed:", error);
+    }
+  });
 
   // Trigger next page fetch when last item is in view
   useEffect(() => {
@@ -186,23 +202,47 @@ export function QuoteList() {
       label: 'PENDIENTE',
       bg: 'bg-gray-100',
       text: 'text-gray-800',
+      hoverBg: 'hover:bg-gray-200'
     },
     in_progress: {
       label: 'EN PROCESO',
       bg: 'bg-yellow-100',
       text: 'text-yellow-800',
+      hoverBg: 'hover:bg-yellow-200'
     },
     ignored: {
       label: 'IGNORADO',
       bg: 'bg-red-100',
       text: 'text-red-800',
+      hoverBg: 'hover:bg-red-200'
     },
     completed: {
       label: 'COMPLETADO',
       bg: 'bg-green-100',
       text: 'text-green-800',
+      hoverBg: 'hover:bg-green-200'
     },
   };
+  
+  // Status dropdown state - track which row has open dropdown
+  const [openStatusDropdown, setOpenStatusDropdown] = useState<number | null>(null);
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Check if the click is inside a dropdown button
+      const target = event.target as HTMLElement;
+      if (!target.closest('.status-dropdown-button') && 
+          !target.closest('.status-dropdown-menu')) {
+        setOpenStatusDropdown(null);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Get status badge based on status
   const getStatusBadge = (status: string | null) => {
@@ -216,6 +256,107 @@ export function QuoteList() {
       >
         {config.label}
       </span>
+    );
+  };
+  
+  // Render status cell with dropdown
+  const StatusCell = ({ value, row }: { value: string | null, row: any }) => {
+    const quoteId = row.original.id;
+    const currentStatus = value || 'pending';
+    const isOpen = openStatusDropdown === quoteId;
+    
+    const handleStatusClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setOpenStatusDropdown(isOpen ? null : quoteId);
+    };
+    
+    // Track if this component is mounted
+    const isMounted = useRef(true);
+    useEffect(() => {
+      return () => {
+        isMounted.current = false;
+      };
+    }, []);
+    
+    const updateStatus = (status: string) => {
+      if (status !== currentStatus) {
+        console.log(`Updating quote ${quoteId} status from "${currentStatus}" to "${status}"`);
+        singleStatusMutation.mutate(
+          { id: quoteId, status },
+          {
+            onSuccess: () => {
+              if (isMounted.current) {
+                console.log(`Successfully updated quote ${quoteId} status to "${status}"`);
+              }
+            },
+            onError: (error) => {
+              console.error(`Error updating quote ${quoteId} status:`, error);
+            }
+          }
+        );
+      }
+      setOpenStatusDropdown(null);
+    };
+    
+    return (
+      <div className="relative">
+        <button
+          onClick={handleStatusClick}
+          className="focus:outline-none status-dropdown-button"
+          title="Cambiar estado"
+          data-quote-id={quoteId}
+        >
+          <div className="flex items-center cursor-pointer group">
+            {getStatusBadge(currentStatus)}
+            <svg 
+              className={`ml-1 w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </button>
+        
+        {isOpen && (
+          <div 
+            className="status-dropdown-menu fixed z-50 mt-1 w-44 bg-white rounded-md shadow-lg py-1" 
+            style={{
+              position: 'absolute',
+              top: '100%',
+              left: '0',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+            }}
+            data-quote-id={quoteId}>
+            {Object.entries(statusConfig).map(([key, config]) => (
+              <button
+                key={key}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent row selection when clicking buttons
+                  updateStatus(key);
+                }}
+                className={`w-full text-left px-3 py-2 text-sm ${config.hoverBg} transition-colors flex items-center justify-between ${
+                  currentStatus === key ? 'bg-gray-100' : ''
+                }`}
+              >
+                <span>{config.label}</span>
+                {currentStatus === key && (
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+        
+        {singleStatusMutation.isPending && singleStatusMutation.variables?.id === quoteId && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
+            <div className="w-5 h-5 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -264,7 +405,7 @@ export function QuoteList() {
       }),
       columnHelper.accessor('status', {
         header: 'Estado',
-        cell: info => getStatusBadge(info.getValue()),
+        cell: info => <StatusCell value={info.getValue()} row={info.row} />,
       }),
       columnHelper.accessor('is_confirmed', {
         header: 'Confirmado',
@@ -345,7 +486,7 @@ export function QuoteList() {
 
   return (
     <div className="container mx-auto p-4">
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-lg shadow-md p-6 relative">
         {/* Header with title and filters */}
         <div className="flex flex-col gap-4 mb-3">
           <div className="flex flex-wrap justify-between items-center mb-1">
@@ -565,7 +706,7 @@ export function QuoteList() {
 
         {/* Tanstack Table */}
         {status === 'success' && quotes.length > 0 && (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto min-h-[400px]">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 {table.getHeaderGroups().map(headerGroup => (
@@ -609,7 +750,11 @@ export function QuoteList() {
                       onClick={() => row.toggleSelected(!row.getIsSelected())}
                     >
                       {row.getVisibleCells().map(cell => (
-                        <td key={cell.id} className="px-2 py-4 whitespace-nowrap">
+                        <td 
+                          key={cell.id} 
+                          className="px-2 py-4 whitespace-nowrap"
+                          onClick={cell.column.id === 'status' ? (e) => e.stopPropagation() : undefined}
+                        >
                           <div className="text-sm text-gray-900">
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
                           </div>
