@@ -1,8 +1,8 @@
-import { 
-  createRootRoute, 
-  createRoute, 
+import {
+  createRootRoute,
+  createRoute,
   createRouter,
-  Outlet
+  Outlet, useNavigate
 } from '@tanstack/react-router';
 import { QuoteForm } from './components/QuoteForm';
 import { QuoteList } from './components/QuoteList';
@@ -10,6 +10,7 @@ import { RootLayout } from './components/RootLayout';
 import { Login } from './components/Login';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { useAuth } from './context/AuthContext';
+import {useEffect} from "react";
 
 // Create the root route
 const rootRoute = createRootRoute({
@@ -53,11 +54,23 @@ const indexRoute = createRoute({
   component: QuoteForm,
 });
 
-// Create the quotes list route
+// Create the quotes list route (admin only)
 const quotesRoute = createRoute({
   getParentRoute: () => authenticatedLayout,
   path: '/quotes',
-  component: QuoteList,
+  component: () => {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    
+    // Redirect non-admin users
+    useEffect(() => {
+      if (!user?.isAdmin) {
+        void navigate({ to: '/' });
+      }
+    }, [user, navigate]);
+    
+    return <QuoteList />;
+  },
 });
 
 // Create and export the router
