@@ -19,8 +19,7 @@ const toTitleCase = (str: string): string => {
 
 export function QuoteForm() {
   const { user, signOut, currentStore } = useAuth();
-  const store = currentStore;
-  
+
   const [clientName, setClientName] = useState<string>('');
   const [numberOfSpaces, setNumberOfSpaces] = useState<number>(1);
   const [saleAmount, setSaleAmount] = useState<string>('');
@@ -29,7 +28,21 @@ export function QuoteForm() {
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [confirmLoading, setConfirmLoading] = useState<boolean>(false);
-  
+
+  // Ensure that currentStore exists before accessing its properties
+  if (!currentStore) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold mb-2">No store selected</h2>
+          <p className="text-gray-600">Please select a store from the navigation menu</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Now we can safely use currentStore since we've checked it's not null
+  const store = currentStore;
   const requiresSaleAmount = store.requires_sale_amount;
 
   // References for input fields focusing

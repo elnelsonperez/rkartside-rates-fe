@@ -9,14 +9,15 @@ interface UserProviderProps {
 }
 
 export function UserProvider({ children }: UserProviderProps) {
-  const { user, loading, currentStore, setCurrentStore } = useAuth();
-  
+  const { user, loading, currentStore, setCurrentStore, updateUserIsAdmin } = useAuth();
+
+
   // Fetch user metadata - this will automatically update the user's isAdmin status
   const metadataQuery = useUserMetadata();
   
   // Fetch stores based on the user's role
   const { stores, isLoading: isLoadingStores } = useStores();
-  
+
   // Set the current store if we have stores and no current store
   useEffect(() => {
     if (stores.length > 0 && !currentStore) {
@@ -28,7 +29,15 @@ export function UserProvider({ children }: UserProviderProps) {
       setCurrentStore(stores[0]);
     }
   }, [stores, currentStore, setCurrentStore, user?.isAdmin]);
-  
+
+
+  useEffect(() => {
+    if (metadataQuery.data) {
+      const { is_admin: isAdmin } = metadataQuery.data;
+      updateUserIsAdmin(isAdmin);
+    }
+  }, [metadataQuery.data]);
+
   // Track if we're waiting for initial data
   const isLoadingUserData = loading || metadataQuery.isLoading || metadataQuery.isFetching;
   const isLoadingStoreData = user && !metadataQuery.isError && isLoadingStores;
