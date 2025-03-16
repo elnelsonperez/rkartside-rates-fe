@@ -26,7 +26,8 @@ import { LoadingSpinner } from './LoadingSpinner';
 import { format } from 'date-fns';
 
 export function QuoteList() {
-  const { currentStore, user: {isAdmin} } = useAuth();
+  const { currentStore, user } = useAuth();
+  const isAdmin = !!user?.isAdmin;
   const { stores } = useStores();
   const queryClient = useQueryClient();
   
@@ -312,7 +313,7 @@ export function QuoteList() {
               <input
                 type="checkbox"
                 id="isConfirmed"
-                checked={filters.isConfirmed}
+                checked={!!filters.isConfirmed}
                 onChange={(e) => setFilters(prev => ({ ...prev, isConfirmed: e.target.checked ? true : null }))}
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />

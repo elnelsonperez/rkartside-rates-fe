@@ -200,7 +200,7 @@ export async function getQuotes(
   return {
     data: data || [],
     nextPage: hasNextPage ? pageParam + pageSize : undefined,
-    totalCount: count,
+    totalCount: count || 0,
   };
 }
 
